@@ -2,7 +2,42 @@ import Header from '../components/Header'
 import { useState, useEffect } from 'react';
 
 function Calendar() {
+    const days = ["Mon","Tue","Wed","Thu","Fri", "Sat", "Sun"]
+    const dates = []
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState(null);
     const [tasks, setTasks] = useState([]);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+    ]
+    const courseColor = {
+        Math: "bg-blue-700",
+        Databases: "bg-emerald-700",
+        "Web Development": "bg-purple-700"
+    }
+    const currentMonth = months[currentDate.getMonth()]; //returns the inde of the month
+    const currentYear = currentDate.getFullYear()
+    const currentMonthIndex = currentDate.getMonth();
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate(); //get the 0th day of the month (the last day of the previous month, 30 or 31 )
+    const startDay = new Date(currentYear, currentMonthIndex, 1).getDay();  //the day the month starts (depending on the month)
+    const selectedTasks = selectedDay ? getTasksForDay(selectedDay) : []; //display in detail tasks for the selected day
+
 
     useEffect(() => {
         const savedTasks = localStorage.getItem('tasks');
@@ -20,8 +55,31 @@ function Calendar() {
         setCurrentDate(new Date(currentYear, currentMonthIndex + 1, 1)) //increase current month by 1
     }
 
+    //if the clicked day is clicked again unselect it
     function selectDay(date) {
-        setSelectedDay(date);
+        if (selectedDay == date){
+            setSelectedDay(null);
+        }
+        else {
+            setSelectedDay(date);
+        }
+    }
+
+    // display tasks for the current day
+    function getTasksForDay(day) {
+        const cellDate = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+        return tasks.filter(task => task.dueDate === cellDate) //tasks for each cell
+    }
+
+    function completedTask(id) {
+        const updatedTasks = [...tasks]
+
+        const task = updatedTasks.find(task => task.id === id)
+
+        task.completed = true;
+
+        setTasks(updatedTasks)
     }
 
     function setPrtiorityColor(priority) {
@@ -37,34 +95,6 @@ function Calendar() {
 
         return priorityColor;
     }
-
-    const days = ["Mon","Tue","Wed","Thu","Fri", "Sat", "Sun"]
-    const dates = []
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDay, setSelectedDay] = useState();
-    const months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December"
-    ]
-    const currentMonth = months[currentDate.getMonth()]; //returns the inde of the month
-    const currentYear = currentDate.getFullYear()
-    const currentMonthIndex = currentDate.getMonth();
-    const today = new Date();
-    const todayDay = today.getDate();
-    const todayMonth = today.getMonth();
-    const todayYear = today.getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate(); //get the 0th day of the month (the last day of the previous month, 30 or 31 )
-    const startDay = new Date(currentYear, currentMonthIndex, 1).getDay();  //the day the month starts (depending on the month)
 
     for (let i = 1; i <= daysInMonth; i++) {
         dates.push(i);
@@ -93,34 +123,123 @@ function Calendar() {
                 {dates.map((date) => {
                     const isToday = date === todayDay && currentMonthIndex === todayMonth && todayYear === currentYear
                     const isSelected = selectedDay === date
-                    const cellDate = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
-                    const tasksForDay = tasks.filter(task => task.dueDate === cellDate) //tasks for each cell
+                    const tasksForDay = getTasksForDay(date); //tasks for each cell
 
                     //color the current day green and color clicked day blue
                     return (
-                            <div key={date} onClick={() => selectDay(date)} className={`min-h-32 rounded-xl p-2 hover:bg-gray-800 transition-colors cursor-pointer
+                            <div key={date} onClick={() => {selectDay(date)}} className={`min-h-32 rounded-xl p-2 hover:bg-gray-800 transition-colors cursor-pointer
                                         ${
                                             isSelected
-                                                ? "ring-2 ring-blue-500"
+                                                ? "ring-4 ring-blue-500"
                                                 : isToday
                                                 ? "bg-emerald-900"
                                                 : "bg-gray-900"
                                         }
                                     `}>
-                                <p className="font-bold">
+                                <p className="font-bold text-lg mb-2">
                                     {date}
                                 </p>
 
                                 {/* render the tasks of each day */}
                                 {tasksForDay.map(task => (
                                     <div key={task.id} className="mt-1 text-s px-2 py-1 truncate flex">
-                                        <div className={`w-2 h-2 m-2 rounded-full ${setPrtiorityColor(task.priority)}`}></div> {task.title}
+                                        <div className={`w-2.5 h-2.5 m-2 rounded-full ${setPrtiorityColor(task.priority)}`}></div> {task.title}
                                     </div>
                                 ))}
-                        </div>
+                            </div>
                     )
                 })}
             </div>
+            {
+                selectedDay != null &&
+                selectedTasks.length > 0 && (
+                    <div className='mt-10 bg-gray-800 rounded-2xl p-3'>
+
+                        <div className='mt-10'>
+                            <h2 className='text-2xl font-bold mb-4'>
+                                Tasks for {selectedDay} {currentMonth}:
+                            </h2>
+                        </div>
+
+                        {selectedTasks.map(task => (
+                            <div
+                                key={task.id}
+                                onClick={() => setSelectedTask(task)}
+                                className='bg-gray-900 rounded-2xl inline-block p-4 m-3 cursor-pointer'
+                            >
+                                <p>
+                                    Status:
+                                    <span
+                                        className={`ml-2 px-2 py-1 rounded-full text-sm font-semibold ${
+                                            task.completed
+                                                ? "bg-green-900 text-green-100"
+                                                : "bg-red-900 text-red-100"
+                                        }`}
+                                    >
+                                        {task.completed ? "Completed" : "Incomplete"}
+                                    </span>
+                                </p>
+                                <h2 className='font-bold text-xl mb-2'>
+                                    {task.title}
+                                </h2>
+
+                                <p
+                                    className={`${courseColor[task.course]} text-center text-lg rounded-2xl px-2`}
+                                >
+                                    {task.course}
+                                </p>
+
+                                <p className='text-gray-400 text-sm mt-2'>
+                                    Due: {task.dueDate}
+                                </p>
+                            </div>
+                        ))}
+
+                    </div>
+                )
+            }
+            {selectedTask && (
+                <div className='fixed inset-0 bg-black/50 flex justify-center items-center'>
+                    <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md">
+
+                        <h2 className="text-2xl font-bold mb-4">
+                            {selectedTask.title}
+                        </h2>
+
+                        <p>
+                            Course: {selectedTask.course}
+                        </p>
+
+                        <p>
+                            Priority: {selectedTask.priority}
+                        </p>
+
+                        <p>
+                            Due Date: {selectedTask.dueDate}
+                        </p>
+
+                        <div className='flex justify-between'>
+                            <button
+                                onClick={() => {
+                                    completedTask(selectedTask.id)
+                                    setSelectedTask(null)
+                                }}
+                                className="mt-4 bg-green-900 px-4 py-2 rounded-xl cursor-pointer"
+                            >
+                                Mark as Done
+                            </button>
+                            <button
+                                onClick={() => setSelectedTask(null)}
+                                className="mt-4 bg-red-900 px-4 py-2 rounded-xl cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        
+
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
