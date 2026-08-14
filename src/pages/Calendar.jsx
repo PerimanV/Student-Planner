@@ -1,13 +1,26 @@
 import Header from '../components/Header'
 import { useState, useEffect } from 'react';
+import { BookOpen, Bell, CalendarDays, Check, RotateCcw } from 'lucide-react';
 
 function Calendar() {
     const days = ["Mon","Tue","Wed","Thu","Fri", "Sat", "Sun"]
     const dates = []
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
-    const [tasks, setTasks] = useState([]);
+    // load tasks
+    const [tasks, setTasks] = useState(() => {
+        const savedTasks = localStorage.getItem('tasks');
+
+        if (savedTasks) {
+            return JSON.parse(savedTasks);
+        }
+        else {
+            return [];
+        }
+    });
+    const [tasksLoaded, setTasksLoaded] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
+    const [editingTask, setEditingTask] = useState(false);
     const months = [
         "January",
         "February",
@@ -38,14 +51,10 @@ function Calendar() {
     const startDay = new Date(currentYear, currentMonthIndex, 1).getDay();  //the day the month starts (depending on the month)
     const selectedTasks = selectedDay ? getTasksForDay(selectedDay) : []; //display in detail tasks for the selected day
 
-
+    //save edited tasks
     useEffect(() => {
-        const savedTasks = localStorage.getItem('tasks');
-
-        if(savedTasks) {
-            setTasks(JSON.parse(savedTasks));
-        }
-    }, []);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }, [tasks, tasksLoaded]);
 
     function previousMonth() {
         setCurrentDate(new Date(currentYear, currentMonthIndex - 1, 1)); //reduce current month by 1
@@ -72,12 +81,12 @@ function Calendar() {
         return tasks.filter(task => task.dueDate === cellDate) //tasks for each cell
     }
 
-    function completedTask(id) {
+    function toggleCompletedTask(id) {
         const updatedTasks = [...tasks]
 
         const task = updatedTasks.find(task => task.id === id)
 
-        task.completed = true;
+        task.completed = !task.completed;
 
         setTasks(updatedTasks)
     }
@@ -94,6 +103,21 @@ function Calendar() {
         }
 
         return priorityColor;
+    }
+
+    function saveTask() {
+        const updatedTasks = tasks.map(task => {
+            if(task.id === selectedTask.id) {
+                return selectedTask;
+            }
+            else {
+                return task;
+            }
+        });
+
+        setTasks(updatedTasks);
+        setSelectedTask(selectedTask);
+        setEditingTask(false);
     }
 
     for (let i = 1; i <= daysInMonth; i++) {
@@ -194,40 +218,125 @@ function Calendar() {
                                 </p>
                             </div>
                         ))}
-
                     </div>
                 )
             }
+
+            {/*--- Task modal ---*/}
             {selectedTask && (
                 <div className='fixed inset-0 bg-black/50 flex justify-center items-center'>
                     <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md">
-
-                        <h2 className="text-2xl font-bold mb-4">
+                    <div className="flex flex-col gap-4">
+                        {/* task edit mode */}
+                        {editingTask ? (
+                            <input 
+                                value={selectedTask.title}
+                                onChange={(e) => setSelectedTask({...selectedTask, title: e.target.value})
+                            }
+                            className='bg-gray-800 border border-gray-700 rounded-lg p-3'
+                            />
+                        ) : (
+                        <h2 className="text-3xl font-bold mx-2 my-3 mb-8 underline">
                             {selectedTask.title}
                         </h2>
+                        )}
 
-                        <p>
-                            Course: {selectedTask.course}
-                        </p>
+                        {editingTask ? (
+                            <select 
+                                value={selectedTask.course}
+                                onChange={(e) => setSelectedTask({...selectedTask, course: e.target.value})
+                            }
+                            className='bg-gray-800 border border-gray-700 rounded-lg p-2'
+                            > 
+                                <option value="Math">Math</option>
+                                <option value="Databases">Databases</option>
+                                <option value="Web Development">Web Development</option>
+                            </select>
+                        ) : (
+                        <div className="flex items-center m-2 gap-3">
+                            <BookOpen size={30}/>
+                            <span>{selectedTask.course}</span>
+                        </div>
+                        )}
 
-                        <p>
-                            Priority: {selectedTask.priority}
-                        </p>
 
-                        <p>
-                            Due Date: {selectedTask.dueDate}
-                        </p>
+                        {editingTask ? (
+                            <select 
+                                value={selectedTask.priority}
+                                onChange={(e) => setSelectedTask({...selectedTask, priority: e.target.value})
+                            }
+                            className='bg-gray-800 border border-gray-700 rounded-lg p-2'
+                            > 
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        ) : (
+                            <div className="flex items-center m-2 gap-3">
+                                <Bell size={30}/>
+                                <span>{selectedTask.priority}</span>
+                            </div>
+                        )}
 
-                        <div className='flex justify-between'>
+                        {editingTask ? (
+                            <input
+                            value={selectedTask.dueDate}
+                            onChange={(e) => setDueDate({...selectedTask, dueDate: e.target.value})}
+                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
+                            type='date'
+                        />
+                        ) : (
+                            <div className="flex items-center m-2 gap-3">
+                                <CalendarDays size={30}/>
+                                <span>{selectedTask.dueDate}</span>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8">
                             <button
                                 onClick={() => {
-                                    completedTask(selectedTask.id)
+                                    toggleCompletedTask(selectedTask.id)
                                     setSelectedTask(null)
                                 }}
-                                className="mt-4 bg-green-900 px-4 py-2 rounded-xl cursor-pointer"
+                                className="mt-4 bg-green-900 px-1 rounded-xl cursor-pointer"
                             >
-                                Mark as Done
+                                <div className="flex items-center m-2 gap-3">
+                                    <span>{selectedTask.completed ? (
+                                        <div className='flex items-center gap-2'>
+                                            <RotateCcw size={25} />
+                                            <span>Mark as Pending</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Check size={25} />
+                                            <span>Mark as Completed</span> 
+                                        </div>
+                                    )}
+                                    </span>
+                                </div>
+
                             </button>
+
+                            <button onClick={() => setEditingTask(!editingTask)}
+                                className='mt-4 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer'    
+                            >
+                                {editingTask ? (
+                                    <button 
+                                        onClick={saveTask}
+                                        className="mt-4 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer"
+                                    >
+                                        Save
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setEditingTask(true)}
+                                        className="bg-blue-900 px-2 py-1 rounded-xl cursor-pointer"
+                                    >
+                                        Edit
+                                    </button>
+                                )}
+                            </button>
+
                             <button
                                 onClick={() => setSelectedTask(null)}
                                 className="mt-4 bg-red-900 px-4 py-2 rounded-xl cursor-pointer"
@@ -236,7 +345,7 @@ function Calendar() {
                             </button>
                         </div>
                         
-
+                        </div>
                     </div>
                 </div>
             )}

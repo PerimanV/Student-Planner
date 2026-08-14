@@ -11,6 +11,13 @@ function Tasks() {
         "Web Development": "bg-purple-700"
     }
 
+    const [showModal, setShowModal] = useState(false)
+    const [title, setTitle] = useState("")
+    const [course, setCourse] = useState(courses[0])
+    const [priority, setPriority] = useState("Medium")
+    const [dueDate, setDueDate] = useState("")
+    const [error, setError] = useState("")
+
     //initialize tasks from localstorage if any exist
     const [tasks, setTasks] = useState((() => {
         const savedTasks = localStorage.getItem('tasks')
@@ -26,14 +33,6 @@ function Tasks() {
     useEffect(() => {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     }, [tasks]);
-
-    const [showModal, setShowModal] = useState(false)
-    const [title, setTitle] = useState("")
-    const [course, setCourse] = useState(courses[0])
-    const [priority, setPriority] = useState("Medium")
-    const [dueDate, setDueDate] = useState("")
-    const [error, setError] = useState("")
-
 
     function addTask() {
 
@@ -103,7 +102,6 @@ function Tasks() {
             <Header />
             <main className='mx-auto max-w-7xl px-4 py-10'>
                 <section className=''>
-                    <h1 className='text-center text-6xl font-bold'>Tasks</h1>
 
                     <button onClick={() => setShowModal(true)} className='mt-8 p-2 flex justify-between w-full cursor-pointer card-hover'>
                         <h3 className='text-3xl font-bold'>Add Task</h3>
@@ -185,91 +183,89 @@ function Tasks() {
 
                 {showModal && (
                     <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4'>
+                        <div className='bg-gray-900 rounded-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden'>
 
-                    <div className='bg-gray-900 rounded-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden'>
+                            <div className='flex justify-end'>
+                            <button onClick={() => closeModal()}>
+                                <X
+                                className='cursor-pointer w-8 h-8 sm:w-10 sm:h-10 text-red-900 hover:text-red-700 transition-colors'
+                                strokeWidth={3}
+                                />
+                            </button>
+                            </div>
 
-                        <div className='flex justify-end'>
-                        <button onClick={() => closeModal()}>
-                            <X
-                            className='cursor-pointer w-8 h-8 sm:w-10 sm:h-10 text-red-900 hover:text-red-700 transition-colors'
-                            strokeWidth={3}
-                            />
-                        </button>
+                            <section className='mt-2 flex flex-col gap-3'>
+
+                                <label className='text-sm text-gray-300'>
+                                    Task Title
+                                </label>
+
+                                <input
+                                    type='text'
+                                    required
+                                    placeholder="Type a title..."
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                />
+
+                                {error && (
+                                    <p className="text-red-700 text-sm">
+                                    {error}
+                                    </p>
+                                )}
+
+                                <label className='text-sm text-gray-300'>
+                                    Course
+                                </label>
+
+                                <select
+                                    value={course}
+                                    onChange={(e) => setCourse(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
+                                >
+                                    {courses.map((course) => (
+                                    <option key={course} value={course}>
+                                        {course}
+                                    </option>
+                                    ))}
+                                </select>
+
+                                <label className='text-sm text-gray-300'>
+                                    Priority
+                                </label>
+
+                                <select
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
+                                >
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+
+                                <label className='text-sm text-gray-300'>
+                                    Due Date
+                                </label>
+
+                                <input
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
+                                    type='date'
+                                />
+
+                                <button
+                                    className='mt-2 transition-all duration-200 w-full cursor-pointer hover:bg-emerald-800 active:bg-emerald-700 bg-emerald-900 rounded-xl px-4 py-3 font-semibold'
+                                    type='submit'
+                                    onClick={addTask}
+                                >
+                                    Add Task
+                                </button>
+                            </section>
                         </div>
-
-                        <section className='mt-2 flex flex-col gap-3'>
-
-                        <label className='text-sm text-gray-300'>
-                            Task Title
-                        </label>
-
-                        <input
-                            type='text'
-                            required
-                            placeholder="Type a title..."
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
-
-                        {error && (
-                            <p className="text-red-700 text-sm">
-                            {error}
-                            </p>
-                        )}
-
-                        <label className='text-sm text-gray-300'>
-                            Course
-                        </label>
-
-                        <select
-                            value={course}
-                            onChange={(e) => setCourse(e.target.value)}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
-                        >
-                            {courses.map((course) => (
-                            <option key={course} value={course}>
-                                {course}
-                            </option>
-                            ))}
-                        </select>
-
-                        <label className='text-sm text-gray-300'>
-                            Priority
-                        </label>
-
-                        <select
-                            value={priority}
-                            onChange={(e) => setPriority(e.target.value)}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
-                        >
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
-
-                        <label className='text-sm text-gray-300'>
-                            Due Date
-                        </label>
-
-                        <input
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
-                            type='date'
-                        />
-
-                        <button
-                            className='mt-2 transition-all duration-200 w-full cursor-pointer hover:bg-emerald-800 active:bg-emerald-700 bg-emerald-900 rounded-xl px-4 py-3 font-semibold'
-                            type='submit'
-                            onClick={addTask}
-                        >
-                            Add Task
-                        </button>
-
-                        </section>
                     </div>
-                </div>
                 )}
             </main>
         </div>
