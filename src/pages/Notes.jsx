@@ -31,43 +31,45 @@ function Notes() {
                     </button>
                  <div className="flex gap-3 mt-8 flex-wrap">
                     <div className="flex flex-col gap-4 w-full">
-                    {courses.map(course => (
-                        <button
-                            key={course.courseName}
-                            onClick={() => setSelectedCourse(course)}
-                            className={`p-4 w-full text-left rounded-2xl transition-all duration-200 cursor-pointer border border-gray-800 bg-gray-900 hover:bg-gray-800 ${
-                                selectedCourse?.courseName === course.courseName
-                                    ? "ring-2 ring-white"
-                                    : ""
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className={`w-2 h-12 rounded-full ${
-                                            courseColors[course.courseColor]
-                                        }`}
-                                    ></div>
-                                    <div>
-                                        <h2 className="text-2xl font-semibold">
-                                            {course.courseName}
-                                        </h2>
+                        {courses.map(course => (
+                            <button
+                                key={course.courseName}
+                                onClick={() => setSelectedCourse(course)}
+                                className={`p-4 w-full text-left rounded-2xl transition-all duration-200 cursor-pointer border border-gray-800 bg-gray-900 hover:bg-gray-800 ${
+                                    selectedCourse?.courseName === course.courseName
+                                        ? "ring-2 ring-white"
+                                        : ""
+                                }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div
+                                            className={`w-2 h-12 rounded-full ${
+                                                courseColors[course.courseColor]
+                                            }`}
+                                        ></div>
+                                        <div>
+                                            <h2 className="text-2xl font-semibold">
+                                                {course.courseName}
+                                            </h2>
 
-                                        <p className="text-gray-400 text-sm mt-1">
-                                            0 notes
-                                        </p>
+                                            <p className="text-gray-400 text-sm mt-1">
+                                                0 notes
+                                            </p>
+                                        </div>
                                     </div>
+                                    <ChevronDown
+                                        className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
+                                            selectedCourse?.courseName === course.courseName
+                                                ? "rotate-180"
+                                                : ""
+                                        }`}
+                                    />
                                 </div>
-                                <ChevronDown
-                                    className={`w-6 h-6 text-gray-400 transition-transform duration-200 ${
-                                        selectedCourse?.courseName === course.courseName
-                                            ? "rotate-180"
-                                            : ""
-                                    }`}
-                                />
-                            </div>
-                            test
-                        </button>
+                                
+                                        
+
+                            </button>
                         ))}
                     </div>
                     </div>
