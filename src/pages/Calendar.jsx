@@ -35,10 +35,12 @@ function Calendar() {
         "November",
         "December"
     ]
-    const courseColor = {
-        Math: "bg-blue-700",
-        Databases: "bg-emerald-700",
-        "Web Development": "bg-purple-700"
+    const courseColors = {
+        blue: "bg-blue-700",
+        green: "bg-emerald-700",
+        purple: "bg-purple-700",
+        orange: "bg-orange-700",
+        red: "bg-red-700"
     }
     const currentMonth = months[currentDate.getMonth()]; //returns the inde of the month
     const currentYear = currentDate.getFullYear()
@@ -207,8 +209,9 @@ function Calendar() {
                                     {task.title}
                                 </h2>
 
+                                        {/* TODO: fix course color */}
                                 <p
-                                    className={`${courseColor[task.course]} text-center text-lg rounded-2xl px-2`}
+                                    className={`${courseColors[task.course.courseColor]} text-center text-lg rounded-2xl px-2`}
                                 >
                                     {task.course}
                                 </p>
@@ -226,7 +229,7 @@ function Calendar() {
             {selectedTask && (
                 <div className='fixed inset-0 bg-black/50 flex justify-center items-center'>
                     <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md">
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
                         {/* task edit mode */}
                         {editingTask ? (
                             <input 
@@ -298,7 +301,7 @@ function Calendar() {
                                     toggleCompletedTask(selectedTask.id)
                                     setSelectedTask(null)
                                 }}
-                                className="mt-4 bg-green-900 px-1 rounded-xl cursor-pointer"
+                                className="mt-3 bg-green-900 px-1 rounded-xl cursor-pointer"
                             >
                                 <div className="flex items-center m-2 gap-3">
                                     <span>{selectedTask.completed ? (
@@ -318,19 +321,19 @@ function Calendar() {
                             </button>
 
                             <button onClick={() => setEditingTask(!editingTask)}
-                                className='mt-4 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer'    
+                                className='mt-3 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer'    
                             >
                                 {editingTask ? (
                                     <button 
                                         onClick={saveTask}
-                                        className="mt-4 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer"
+                                        className=" bg-blue-900 px-2 py-1 rounded-xl cursor-pointer"
                                     >
                                         Save
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setEditingTask(true)}
-                                        className="bg-blue-900 px-2 py-1 rounded-xl cursor-pointer"
+                                        className=" bg-blue-900 px-2 py-1 rounded-xl cursor-pointer"
                                     >
                                         Edit
                                     </button>
@@ -339,7 +342,7 @@ function Calendar() {
 
                             <button
                                 onClick={() => setSelectedTask(null)}
-                                className="mt-4 bg-red-900 px-4 py-2 rounded-xl cursor-pointer"
+                                className="mt-3 bg-red-900 px-4 py-2 rounded-xl cursor-pointer"
                             >
                                 Close
                             </button>

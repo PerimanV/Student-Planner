@@ -22,7 +22,7 @@ function Header() {
             </li>
 
             <li className="hover:text-emerald-400 transition-colors">
-              <Link to="">Notes</Link>
+              <Link to="/Notes">Notes</Link>
             </li>
 
             <li className="hover:text-emerald-400 transition-colors">

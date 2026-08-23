@@ -4,19 +4,28 @@ import { Plus, X, SquareCheckBig, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 function Tasks() {
-    let courses = ["Math", "Databases", "Web Development"];
     const courseColors = {
-        Math: "bg-blue-700",
-        Databases: "bg-emerald-700",
-        "Web Development": "bg-purple-700"
+        blue: "bg-blue-700",
+        green: "bg-emerald-700",
+        purple: "bg-purple-700",
+        orange: "bg-orange-700",
+        red: "bg-red-700"
     }
-
     const [showModal, setShowModal] = useState(false)
     const [title, setTitle] = useState("")
-    const [course, setCourse] = useState(courses[0])
     const [priority, setPriority] = useState("Medium")
     const [dueDate, setDueDate] = useState("")
     const [error, setError] = useState("")
+    const [courses, setCourses] = useState(() => {
+    const savedCourses = localStorage.getItem("courses");
+        if(savedCourses) {
+            return JSON.parse(savedCourses)
+        }
+        else {
+            return []
+        }
+    })
+    const [course, setCourse] = useState(courses[0]?.courseName || "");
 
     //initialize tasks from localstorage if any exist
     const [tasks, setTasks] = useState((() => {
@@ -54,7 +63,7 @@ function Tasks() {
         setTasks([...tasks, newTask])
         closeModal()
         setTitle('')
-        setCourse(courses[0])
+        setCourse(courses[0]?.courseName || "")
         setPriority("Medium")
         setDueDate('')
     }
@@ -63,7 +72,7 @@ function Tasks() {
         setShowModal(false)
 
         setTitle('')
-        setCourse(courses[0])
+        setCourse(courses[0]?.courseName || "")
         setPriority('Medium')
         setDueDate('')
         setError('')
@@ -110,15 +119,15 @@ function Tasks() {
                     <div className='mt-8 grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3'>
                         {courses.map((course, index) => (
                             <div className='rounded-xl bg-gray-900 min-h-125 overflow-hidden' key={index}>
-                                <h2 className={`p-3 text-2xl text-center ${courseColors[course]} rounded-t-xl`}>
-                                    {course}
+                                <h2 className={`p-3 text-2xl text-center ${courseColors[course.courseColor]} rounded-t-xl`}>
+                                    {course.courseName}
                                 </h2>
                                 {/* display each task in the corresponding course column */}
-                                {tasks.filter((task) => task.course == course).length === 0 && (
+                                {tasks.filter((task) => task.course == course.courseName).length === 0 && (
                                     <p className='mt-10 text-xl text-center opacity-50'>No tasks yet</p>
                                 )}
                                 {tasks
-                                    .filter((task) => task.course == course)
+                                    .filter((task) => task.course == course.courseName)
                                     .map((task) => (
                                         <div
                                             key={task.id}
@@ -186,12 +195,12 @@ function Tasks() {
                         <div className='bg-gray-900 rounded-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden'>
 
                             <div className='flex justify-end'>
-                            <button onClick={() => closeModal()}>
-                                <X
-                                className='cursor-pointer w-8 h-8 sm:w-10 sm:h-10 text-red-900 hover:text-red-700 transition-colors'
-                                strokeWidth={3}
-                                />
-                            </button>
+                                <button onClick={() => closeModal()}>
+                                    <X
+                                    className='cursor-pointer w-8 h-8 sm:w-10 sm:h-10 text-red-900 hover:text-red-700 transition-colors'
+                                    strokeWidth={3}
+                                    />
+                                </button>
                             </div>
 
                             <section className='mt-2 flex flex-col gap-3'>
@@ -225,11 +234,17 @@ function Tasks() {
                                     className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
                                 >
                                     {courses.map((course) => (
-                                    <option key={course} value={course}>
-                                        {course}
+                                    <option key={course.courseName} value={course.courseName}>
+                                        {course.courseName}
                                     </option>
                                     ))}
                                 </select>
+
+                                {/* {courses.map((course) => (
+                                    <p>
+                                        {course.courseName}
+                                    </p>
+                                ))} */}
 
                                 <label className='text-sm text-gray-300'>
                                     Priority

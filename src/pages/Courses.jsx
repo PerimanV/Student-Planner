@@ -21,8 +21,6 @@ function Courses() {
     const [courseName, setCourseName] = useState("");
     const [courseColor, setCourseColor] = useState("");
     const [error, setError] = useState("")
-    // TODO: add localstorage for course
-    // TODO: save course color
 
     function closeModal() {
         setShowModal(false);
@@ -44,12 +42,20 @@ function Courses() {
             return;
         }
 
+        //check for duplicate course names
+        if (courses.some(course => 
+            course.courseName.toLowerCase() === courseName.trim().toLowerCase())
+        ) {
+            setError("A course with this name already exists")
+            return;
+        }
+
         setError("")
 
         const newCourse = {
-            courseName,
-            courseColor 
-        }
+            courseName: courseName.trim(),
+            courseColor
+        };
 
         setCourses([...courses, newCourse]);
         closeModal()
@@ -69,17 +75,38 @@ function Courses() {
     }
 
     function saveEditedCourse() {
+    const oldCourseName = editingCourse.courseName;
+
     const updatedCourses = courses.map(course => {
         if (course === editingCourse) {
-            return {...course, courseName: courseName, courseColor: courseColor};
+            return {
+                ...course,
+                courseName: courseName,
+                courseColor: courseColor
+            };
         }
         else {
            return course;
         } 
 
-        setCourses(updatedCourses);
-        closeModal();
     });
+
+    // Update tasks of the old course
+    const savedTasks = localStorage.getItem("tasks");
+    const tasks = savedTasks ? JSON.parse(savedTasks) : [];
+
+    const updatedTasks = tasks.map(task => {
+        if (task.course === oldCourseName) {
+            return {
+                ...task,
+                course: courseName
+            };
+        } else {
+            return task;
+        }
+    });
+
+    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
 
     setCourses(updatedCourses);
     closeModal();
@@ -120,12 +147,14 @@ function Courses() {
                         return ( 
                             <CourseCard 
                                 key={course.courseName}
-                                color={course.courseColor}
                                 course={course.courseName}
+                                color={course.courseColor}
+                                tasks={courseTasks}
                                 completed={completed}
                                 pending={pending}
                                 onEdit={() => editCourse(course)}
                                 onDelete={() => deleteCourse(course)}
+                                onClick={() => toggleExpandCourse(course.courseName)}
                             />
                         );
                     })}
