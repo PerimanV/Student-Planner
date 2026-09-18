@@ -5,11 +5,11 @@ import { useEffect, useState } from 'react';
 
 function Tasks() {
     const courseColors = {
-        blue: "bg-blue-700",
-        green: "bg-emerald-700",
-        purple: "bg-purple-700",
-        orange: "bg-orange-700",
-        red: "bg-red-700"
+        blue: "bg-blue-700/70",
+        green: "bg-emerald-700/70",
+        purple: "bg-purple-700/70",
+        orange: "bg-orange-700/70",
+        red: "bg-red-700/70"
     }
     const [showModal, setShowModal] = useState(false)
     const [title, setTitle] = useState("")

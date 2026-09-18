@@ -26,7 +26,7 @@ function Header() {
             </li>
 
             <li className="hover:text-emerald-400 transition-colors">
-              <Link to="">Profile</Link>
+              <Link to="/Profile">Profile</Link>
             </li>
           </ul>
         </nav>

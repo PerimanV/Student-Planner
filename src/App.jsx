@@ -5,6 +5,7 @@ import NotFound from './pages/NotFound';
 import Calendar from './pages/Calendar';
 import Courses from './pages/Courses';
 import Notes from './pages/Notes';
+import Profile from './pages/Profile';
 
 const router = createBrowserRouter([
   {path:"/", element: <Dashboard />},
@@ -12,7 +13,8 @@ const router = createBrowserRouter([
   {path: "/tasks", element: <Tasks />},
   {path: "/calendar", element: <Calendar />},
   {path: "/courses", element: <Courses />},
-  {path: "/notes", element: <Notes />}
+  {path: "/notes", element: <Notes />},
+  {path: "/profile", element: <Profile />}
 ]);
 
 function App() {
