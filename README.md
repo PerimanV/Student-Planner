@@ -1,18 +1,9 @@
-# React + Vite
+# Student Planner with AI summarization 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This app was built for my  Bachelor's thesis in University Of Peloponesse in Informations and Telecommunications.
+It can be used as a planning app for fellow students to keep track of deadlines, keep notes for each course and even summarize the notes using AI
+to help students prepare for their exams. It **Features** a **Modern UI**, an interactive and comprehensive **Calendar** that helps students track their deadlines 
+by clicking on each day, a **Task Creation and Management Page**, a **Notes** page where students can keep notes on each course, manage them and summarize them and a **Courses** page 
+to manage their courses.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+It is built using React Js and MongoDB
