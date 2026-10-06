@@ -240,12 +240,6 @@ function Tasks() {
                                     ))}
                                 </select>
 
-                                {/* {courses.map((course) => (
-                                    <p>
-                                        {course.courseName}
-                                    </p>
-                                ))} */}
-
                                 <label className='text-sm text-gray-300'>
                                     Priority
                                 </label>
