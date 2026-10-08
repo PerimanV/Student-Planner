@@ -8,19 +8,37 @@ function Courses() {
     const tasks = tasksInit ? JSON.parse(tasksInit) : [];
     const [showModal, setShowModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
-    const [courses, setCourses] = useState((() => {
-        const savedCourses = localStorage.getItem('courses')
-
-        if(savedCourses) {
-            return JSON.parse(savedCourses)
-        }
-        else {
-            return []
-        }
-    }));
+    const [courses, setCourses] = useState([]);
     const [courseName, setCourseName] = useState("");
     const [courseColor, setCourseColor] = useState("");
-    const [error, setError] = useState("")
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetch("http:// localhost:5000/api/courses")
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        });
+    }, []);
+
+    function testCreateCourse() {
+    fetch("http://localhost:5000/api/courses", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            id: Date.now(),
+            courseName: "Databases",
+            courseColor: "blue"
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            setCourses(prevCourses => [...prevCourses, data]);
+        });
+}
 
     function closeModal() {
         setShowModal(false);
@@ -121,7 +139,11 @@ function Courses() {
     }
 
     return (
+        
         <div className="min-h-screen bg-gray-950 text-white">
+            <button onClick={testCreateCourse}>
+                Test Create Course
+            </button>
             <Header />
 
             <main className="mx-auto max-w-7xl px-4 py-10">
