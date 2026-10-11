@@ -40,8 +40,24 @@ app.post("/api/courses", async (req, res) => {
 
         res.json(newCourse);
     } catch (error) {
+
+        console.error("Error creating course:", error);
         res.status(500).json({
             message: "Failed to create course"
+        });
+    }
+});
+
+app.get("/api/courses", async (req, res) => {
+    try {
+        const courses = await Course.find();
+
+        res.json(courses);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to fetch courses"
         });
     }
 });

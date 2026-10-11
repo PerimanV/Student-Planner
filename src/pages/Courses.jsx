@@ -14,31 +14,15 @@ function Courses() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        fetch("http:// localhost:5000/api/courses")
+        fetch("http://localhost:5000/api/courses")
         .then(response => response.json())
         .then(data => {
             setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching courses:", error);
         });
     }, []);
-
-    function testCreateCourse() {
-    fetch("http://localhost:5000/api/courses", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            id: Date.now(),
-            courseName: "Databases",
-            courseColor: "blue"
-        })
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            setCourses(prevCourses => [...prevCourses, data]);
-        });
-}
 
     function closeModal() {
         setShowModal(false);
@@ -49,7 +33,7 @@ function Courses() {
         setError('');
     }
     
-    function addCourse() {
+    async function addCourse() {
         if (!courseName) {
             setError("Course name is required")
             return
@@ -70,20 +54,34 @@ function Courses() {
 
         setError("")
 
-        const newCourse = {
-            courseName: courseName.trim(),
-            courseColor
-        };
+        try {
+            const response  = await fetch("http://localhost:5000/api/courses", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId: "6ac662242783449c4c5ce6ce",
+                    courseName: courseName,
+                    courseColor: courseColor
+                })
+            });
 
-        setCourses([...courses, newCourse]);
-        closeModal()
-        setCourseName('');
-        setCourseColor('');
+            if (!response.ok) {
+                throw new Error("Failed to create course");
+            }
+
+            const newCourse = await response.json();
+
+            setCourses(prevCourses => [...prevCourses, newCourse]);
+
+            closeModal();
+            setCourseName('');
+            setCourseColor('');
+        } catch (error) {
+            console.error("Error creating course:", error)
+        }
     }
-
-    useEffect(() => {
-        localStorage.setItem('courses', JSON.stringify(courses));
-    }, [courses])
 
     function editCourse(course) {
         setEditingCourse(course);
@@ -141,9 +139,6 @@ function Courses() {
     return (
         
         <div className="min-h-screen bg-gray-950 text-white">
-            <button onClick={testCreateCourse}>
-                Test Create Course
-            </button>
             <Header />
 
             <main className="mx-auto max-w-7xl px-4 py-10">
