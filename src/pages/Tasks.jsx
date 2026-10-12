@@ -16,34 +16,45 @@ function Tasks() {
     const [priority, setPriority] = useState("Medium")
     const [dueDate, setDueDate] = useState("")
     const [error, setError] = useState("")
-    const [courses, setCourses] = useState(() => {
-    const savedCourses = localStorage.getItem("courses");
-        if(savedCourses) {
-            return JSON.parse(savedCourses)
-        }
-        else {
-            return []
-        }
-    })
+    //initialize courses if any exist
+    const [courses, setCourses] = useState([])
+    useEffect(() => {
+        fetch("http://localhost:5000/api/courses")
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching tasks:", error);
+        })
+    }, [])
+    
     const [course, setCourse] = useState(courses[0]?.courseName || "");
-
-    //initialize tasks from localstorage if any exist
-    const [tasks, setTasks] = useState((() => {
-        const savedTasks = localStorage.getItem('tasks')
-
-        if (savedTasks) {
-            return JSON.parse(savedTasks)
+    
+    useEffect(() => {
+        if (courses.length > 0 && !course) {
+            setCourse(courses[0].courseName);
         }
-        else {
-            return []
-        }
-    }))
+    }, [courses, course]);
+
+    //initialize tasks if any exist
+    const [tasks, setTasks] = useState([])
+    useEffect(() => {
+        fetch("http://localhost:5000/api/tasks")
+        .then(response => response.json())
+        .then(data => {
+            setTasks(data);
+        })
+        .catch(error => {
+            console.error("Error fetching tasks:", error);
+        }) 
+    }, [])
 
     useEffect(() => {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     }, [tasks]);
 
-    function addTask() {
+    async function addTask() {
 
         if (!title) {
             setError("Title is required")
@@ -51,21 +62,48 @@ function Tasks() {
         }
         setError("")
 
-        const newTask = {
-            id: Date.now(),
-            title,
-            course,
-            priority,
-            dueDate,
-            completed: false
+        
+        const selectedCourse = courses.find(
+            c => c.courseName === course
+        );
+
+        if (!selectedCourse) {
+            setError("Please select a valid course");
+            return;
         }
 
-        setTasks([...tasks, newTask])
-        closeModal()
-        setTitle('')
-        setCourse(courses[0]?.courseName || "")
-        setPriority("Medium")
-        setDueDate('')
+        try {
+            const response = await fetch("http://localhost:5000/api/tasks", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId: "6ac662242783449c4c5ce6ce",
+                    courseId: selectedCourse?._id,
+                    title: title,
+                    priority: priority,
+                    dueDate: dueDate,
+                    completed: false
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to create task");
+            }
+
+            const newTask = await response.json();
+
+            setTasks([...tasks, newTask])
+            closeModal()
+            setTitle('')
+            setCourse(courses[0]?.courseName || "")
+            setPriority("Medium")
+            setDueDate('')
+        } catch (error) {
+            console.error("Error creating task:", error)
+        }
+       
     }
 
     function closeModal() {
@@ -123,11 +161,11 @@ function Tasks() {
                                     {course.courseName}
                                 </h2>
                                 {/* display each task in the corresponding course column */}
-                                {tasks.filter((task) => task.course == course.courseName).length === 0 && (
+                                {tasks.filter((task) => task.courseId == course._id).length === 0 && (
                                     <p className='mt-10 text-xl text-center opacity-50'>No tasks yet</p>
                                 )}
                                 {tasks
-                                    .filter((task) => task.course == course.courseName)
+                                    .filter((task) => task.courseId == course._id)
                                     .map((task) => (
                                         <div
                                             key={task.id}
@@ -170,7 +208,7 @@ function Tasks() {
                                                     </h3>
 
                                                     <p className='text-sm text-gray-400'>
-                                                        {task.dueDate.split("-").reverse().join("/")}
+                                                        {task.dueDate?.slice(0, 10).split("-").reverse().join("/")}
                                                     </p>
                                                 </div>
                                             </div>

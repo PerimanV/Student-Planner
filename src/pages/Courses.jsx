@@ -90,50 +90,90 @@ function Courses() {
         setShowModal(true);
     }
 
-    function saveEditedCourse() {
-    const oldCourseName = editingCourse.courseName;
+    
+    async function saveEditedCourse() {
+        const oldCourseName = editingCourse.courseName;
 
-    const updatedCourses = courses.map(course => {
-        if (course === editingCourse) {
-            return {
-                ...course,
-                courseName: courseName,
-                courseColor: courseColor
-            };
+        try {
+            const response = await fetch(
+                `http://localhost:5000/api/courses/${editingCourse._id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        courseName: courseName,
+                        courseColor: courseColor
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to update course");
+            }
+
+            const updatedCourse = await response.json();
+
+            const updatedCourses = courses.map(course => {
+                if (course._id === updatedCourse._id) {
+                    return updatedCourse;
+                } else {
+                    return course;
+                }
+            });
+
+            // Update tasks of the old course
+            if (oldCourseName !== courseName) {
+                const savedTasks = localStorage.getItem("tasks");
+                const tasks = savedTasks ? JSON.parse(savedTasks) : [];
+
+                const updatedTasks = tasks.map(task => {
+                    if (task.course === oldCourseName) {
+                        return {
+                            ...task,
+                            course: courseName
+                        };
+                    } else {
+                        return task;
+                    }
+                });
+
+                localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+            }
+
+            setCourses(updatedCourses);
+            closeModal();
+
+        } catch (error) {
+            console.error("Error updating course:", error);
         }
-        else {
-           return course;
-        } 
+    }
 
-    });
 
-    // Update tasks of the old course
-    const savedTasks = localStorage.getItem("tasks");
-    const tasks = savedTasks ? JSON.parse(savedTasks) : [];
+    async function deleteCourse(courseToDelete) {
+        try {
+            const response = await fetch(
+                `http://localhost:5000/api/courses/${courseToDelete._id}`,
+                {
+                    method: "DELETE"
+                }
+            );
 
-    const updatedTasks = tasks.map(task => {
-        if (task.course === oldCourseName) {
-            return {
-                ...task,
-                course: courseName
-            };
-        } else {
-            return task;
+            if (!response.ok) {
+                throw new Error("Failed to delete course");
+            }
+
+            //remove course from course list on frontend
+            setCourses(prevCourses => 
+                prevCourses.filter(course => 
+                    course._id != courseToDelete._id
+                )
+            );
+
+        } catch (error) {
+            console.error("Error deleting course:", error);
         }
-    });
-
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-
-    setCourses(updatedCourses);
-    closeModal();
-}
-
-    function deleteCourse(courseToDelete) {
-        const updatedCourses = courses.filter(
-            course => course !== courseToDelete
-        );
-
-        setCourses(updatedCourses);
     }
 
     return (
