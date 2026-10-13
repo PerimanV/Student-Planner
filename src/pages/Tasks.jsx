@@ -116,17 +116,59 @@ function Tasks() {
         setError('')
     }      
 
-    function deleteTask(id) {
-        setTasks(tasks.filter(task => task.id !== id))
+    async function deleteTask(id) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete task");
+            }
+
+            // remove task from front end
+            setTasks(prevTasks =>
+                prevTasks.filter(task => task._id !== id)
+            );
+        } catch (error) {
+            console.error("Error deleting task:", error);
+        }
     }
 
-    function toggleTask(id) {
+    async function toggleTask(id) {
         const updatedTasks = [...tasks]
-        const task = updatedTasks.find(task => task.id === id)
+        const task = tasks.find(task => task._id === id)
 
-        // toggle task completion (checkbox)
-        task.completed = !task.completed
-        setTasks(updatedTasks)    
+        try {
+            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    completed: !task.completed
+                }) 
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to update task");
+            }
+
+            const updatedTask = await response.json();
+            
+            //only replace updated task
+            setTasks(prevTasks =>
+                prevTasks.map(tsk => {
+                    if(tsk._id === id) {
+                        return updatedTask
+                    } else {
+                        return tsk
+                    }
+                })
+            );  
+        } catch (error) {
+            console.error("Error toggling task:", error);
+        } 
     }
 
     function setPrtiorityColor(priority) {
@@ -172,7 +214,7 @@ function Tasks() {
                                             className='m-4 p-3 card-hover overflow-hidden'
                                             onContextMenu={(e) => {
                                                 e.preventDefault()
-                                                deleteTask(task.id)
+                                                deleteTask(task._id)
                                             }}
                                         >
 
@@ -183,14 +225,14 @@ function Tasks() {
                                                 {task.completed ? (
                                                     <button
                                                         className='cursor-pointer shrink-0'
-                                                        onClick={() => toggleTask(task.id)}
+                                                        onClick={() => toggleTask(task._id)}
                                                     >
                                                         <SquareCheckBig className='w-7 h-7 sm:w-8 sm:h-8'/>
                                                     </button>
                                                 ) : (
                                                     <button
                                                         className='cursor-pointer shrink-0'
-                                                        onClick={() => toggleTask(task.id)}
+                                                        onClick={() => toggleTask(task._id)}
                                                     >
                                                         <Square className='w-7 h-7 sm:w-8 sm:h-8'/>
                                                     </button>
