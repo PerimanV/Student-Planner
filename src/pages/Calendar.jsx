@@ -9,15 +9,17 @@ function Calendar() {
     const [selectedDay, setSelectedDay] = useState(null);
 
     // load tasks
-    const [tasks, setTasks] = useState(() => {
-        const savedTasks = localStorage.getItem('tasks');
-
-        if (savedTasks) {
-            return JSON.parse(savedTasks);
-        } else {
-            return [];
-        }
-    });
+    const [tasks, setTasks] = useState([]);
+    useEffect(() => {
+        fetch("http://localhost:5000/api/tasks?userId=6ac662242783449c4c5ce6ce")
+        .then(response => response.json())
+        .then(data => {
+            setTasks(data);
+        })
+        .catch(error => {
+            console.error("Error fetching tasks:", error);
+        });
+    }, [])
 
     const [tasksLoaded, setTasksLoaded] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -81,14 +83,7 @@ function Calendar() {
         1
     ).getDay();
 
-    const selectedTasks = selectedDay
-        ? getTasksForDay(selectedDay)
-        : [];
-
-    // save edited tasks
-    useEffect(() => {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    }, [tasks, tasksLoaded]);
+    const selectedTasks = selectedDay ? getTasksForDay(selectedDay): [];
 
     function previousMonth() {
         setCurrentDate(
@@ -124,19 +119,43 @@ function Calendar() {
         const cellDate = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
         return tasks.filter(
-            task => task.dueDate === cellDate
-        )
+            task => task.dueDate?.slice(0, 10) === cellDate
+        );
     }
 
-    function toggleCompletedTask(id) {
+    async function toggleCompletedTask(id) {
         const updatedTasks = [...tasks]
 
         const task = updatedTasks.find(
-            task => task.id === id
+            task => task._id === id
         )
 
-        task.completed = !task.completed;
-        setTasks(updatedTasks)
+        try {
+            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Conent-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    completed: !task.completed
+                })
+            });
+
+            if(!response.ok) {
+                throw new Error("Failed to update task");
+            }
+
+            const updatedTask = await response.json();
+
+            setTasks(prevTasks => 
+                prevTasks.map(task =>
+                task._id === id ? updatedTask : task)
+            );
+
+            setSelectedTask(updatedTask);
+        } catch (error) {
+            console.error("Error toggling task:", error);
+        }
     }
 
     function setPrtiorityColor(priority) {
@@ -153,18 +172,42 @@ function Calendar() {
         return priorityColor;
     }
 
-    function saveTask() {
-        const updatedTasks = tasks.map(task => {
-            if (task.id === selectedTask.id) {
-                return selectedTask;
-            } else {
-                return task;
-            }
-        });
+    async function saveTask() {
+        try {
+            const response = await fetch(
+                `http://localhost:5000/api/tasks/${selectedTask._id}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        title: selectedTask.title,
+                        priority: selectedTask.priority,
+                        dueDate: selectedTask.dueDate || null
+                    })
+                }
+            );
 
-        setTasks(updatedTasks);
-        setSelectedTask(selectedTask);
-        setEditingTask(false);
+            if (!response.ok) {
+                throw new Error("Failed to save task");
+            }
+
+            const updatedTask = await response.json();
+
+            setTasks(prevTasks =>
+                prevTasks.map(task =>
+                    task._id === updatedTask._id
+                        ? updatedTask
+                        : task
+                )
+            );
+
+            setSelectedTask(updatedTask);
+            setEditingTask(false);
+        } catch (error) {
+            console.error("Error saving task:", error);
+        }
     }
 
     for (let i = 1; i <= daysInMonth; i++) {
@@ -250,7 +293,7 @@ function Calendar() {
                                 {/* render the tasks of each day */}
                                 {tasksForDay.map(task => (
                                     <div
-                                        key={task.id}
+                                        key={task._id}
                                         className="mt-1 text-s px-2 py-1 truncate flex"
                                     >
                                         <div
@@ -280,7 +323,7 @@ function Calendar() {
 
                             {selectedTasks.map(task => (
                                 <div
-                                    key={task.id}
+                                    key={task._id}
                                     onClick={() => setSelectedTask(task)}
                                     className="bg-gray-950 border border-gray-800 rounded-2xl inline-block p-4 m-2 cursor-pointer hover:bg-gray-800 transition-colors"
                                 >
@@ -406,7 +449,7 @@ function Calendar() {
 
                                 {editingTask ? (
                                     <input
-                                        value={selectedTask.dueDate}
+                                        value={selectedTask.dueDate?.slice(0, 10) || ""}
                                         onChange={(e) =>
                                             setSelectedTask({
                                                 ...selectedTask,
@@ -419,14 +462,14 @@ function Calendar() {
                                 ) : (
                                     <div className="flex items-center m-2 gap-3">
                                         <CalendarDays size={30}/>
-                                        <span>{selectedTask.dueDate}</span>
+                                        <span>{selectedTask.dueDate?.slice(0, 10) || "No due date"}</span>
                                     </div>
                                 )}
 
                                 <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8">
                                     <button
                                         onClick={() => {
-                                            toggleCompletedTask(selectedTask.id)
+                                            toggleCompletedTask(selectedTask._id)
                                             setSelectedTask(null)
                                         }}
                                         className="mt-3 bg-green-900 px-1 rounded-xl cursor-pointer"

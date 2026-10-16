@@ -50,10 +50,6 @@ function Tasks() {
         }) 
     }, [])
 
-    useEffect(() => {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    }, [tasks]);
-
     async function addTask() {
 
         if (!title) {

@@ -21,11 +21,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 const PORT = 5000;
 
-app.put("/api/test", (req, res) => {
-  console.log("Test PUT received");
-  res.json({ message: "PUT works" });
-});
-
 app.post("/api/users", async (req, res) => {
     try {
         const newUser = await User.create(req.body);
@@ -135,6 +130,7 @@ app.post("/api/tasks", async (req, res) => {
 
 app.get("/api/tasks", async (req, res) => {
     try {
+        
         const tasks = await Task.find();
 
         res.json(tasks);
