@@ -96,8 +96,7 @@ function Courses() {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/courses/${editingCourse._id}`,
-                {
+                `http://localhost:5000/api/courses/${editingCourse._id}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"

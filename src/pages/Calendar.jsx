@@ -1,6 +1,6 @@
 import Header from '../components/Header'
 import { useState, useEffect, useRef } from "react";
-import { BookOpen, Bell, CalendarDays, Check, RotateCcw } from 'lucide-react';
+import { BookOpen, Bell, CalendarDays, Check, RotateCcw, X } from 'lucide-react';
 
 function Calendar() {
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -24,6 +24,17 @@ function Calendar() {
     const [tasksLoaded, setTasksLoaded] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [editingTask, setEditingTask] = useState(false);
+    const [courses, setCourses] = useState([]);
+    useEffect(() => {
+        fetch("http://localhost:5000/api/courses")
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching courses:", error);
+        })
+    }, [])
 
     // Reference to the selected day's tasks section
     const selectedDayRef = useRef(null);
@@ -114,6 +125,20 @@ function Calendar() {
         }
     }
 
+    function getCourseForTask(task) {
+    const course = courses.find(
+        course => String(course._id) === String(task.courseId)
+    );
+
+    if (!course) {
+        console.log("No matching course found");
+        console.log("Task courseId:", task.courseId);
+        console.log("Available courses:", courses);
+    }
+
+    return course;
+}
+
     // display tasks for the current day
     function getTasksForDay(day) {
         const cellDate = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -134,7 +159,7 @@ function Calendar() {
             const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
                 method: "PUT",
                 headers: {
-                    "Conent-Type": "application/json"
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     completed: !task.completed
@@ -182,6 +207,7 @@ function Calendar() {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
+                        courseId: selectedTask.courseId,
                         title: selectedTask.title,
                         priority: selectedTask.priority,
                         dueDate: selectedTask.dueDate || null
@@ -321,175 +347,281 @@ function Calendar() {
                                 </h2>
                             </div>
 
-                            {selectedTasks.map(task => (
-                                <div
-                                    key={task._id}
-                                    onClick={() => setSelectedTask(task)}
-                                    className="bg-gray-950 border border-gray-800 rounded-2xl inline-block p-4 m-2 cursor-pointer hover:bg-gray-800 transition-colors"
-                                >
-                                    <p>
-                                        Status:
+                            {selectedTasks.map(task => 
+                                {
+                                    const course = getCourseForTask(task);
 
-                                        <span
-                                            className={`ml-2 px-2 py-1 rounded-full text-sm font-semibold ${
-                                                task.completed
-                                                    ? "bg-green-900 text-green-100"
-                                                    : "bg-red-900 text-red-100"
-                                            }`}
+                                    return (
+                                        <div
+                                            key={task._id}
+                                            onClick={() => setSelectedTask(task)}
+                                            className="bg-gray-950 border border-gray-800 rounded-2xl inline-block p-4 m-2 cursor-pointer hover:bg-gray-800 transition-colors"
                                         >
-                                            {task.completed
-                                                ? "Completed"
-                                                : "Incomplete"
-                                            }
-                                        </span>
-                                    </p>
+                                            <p>
+                                                Status:
 
-                                    <h2 className="font-bold text-xl mb-2">
-                                        {task.title}
-                                    </h2>
+                                                <span
+                                                    className={`ml-2 px-2 py-1 rounded-full text-sm font-semibold ${
+                                                        task.completed
+                                                            ? "bg-green-900 text-green-100"
+                                                            : "bg-red-900 text-red-100"
+                                                    }`}
+                                                >
+                                                    {task.completed
+                                                        ? "Completed"
+                                                        : "Incomplete"
+                                                    }
+                                                </span>
+                                            </p>
 
-                                    {/* TODO: fix course color */}
-                                    <p
-                                        className={`${courseColors[task.course?.courseColor]} text-center text-lg rounded-2xl px-2`}
-                                    >
-                                        {task.course}
-                                    </p>
+                                            <h2 className="font-bold text-xl mb-2">
+                                                {task.title}
+                                            </h2>
 
-                                    <p className="text-gray-400 text-sm mt-2">
-                                        Due: {task.dueDate}
-                                    </p>
-                                </div>
-                            ))}
+                                            {/* TODO: fix course color */}
+                                            <p
+                                                className={`${
+                                                    courseColors[course?.courseColor] || "bg-gray-700"
+                                                } text-center text-lg rounded-2xl px-2`}
+                                            >
+                                                {course.courseName}
+                                            </p>
+
+                                            <p className="text-gray-400 text-sm mt-2">
+                                                Due: {task.dueDate}
+                                            </p>
+                                        </div>
+                                    )
+                                })}
                         </div>
                     )
                 }
 
-                {/*--- Task modal ---*/}
+                {/* Task modal */}
                 {selectedTask && (
-                    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-                        <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md">
-                            <div className="flex flex-col gap-2">
-                                {/* task edit mode */}
-                                {editingTask ? (
-                                    <input
-                                        value={selectedTask.title}
-                                        onChange={(e) =>
-                                            setSelectedTask({
-                                                ...selectedTask,
-                                                title: e.target.value
-                                            })
-                                        }
-                                        className="bg-gray-800 border border-gray-700 rounded-lg p-3"
-                                    />
-                                ) : (
-                                    <h2 className="text-3xl font-bold mx-2 my-3 mb-8 underline">
-                                        {selectedTask.title}
-                                    </h2>
-                                )}
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                        onClick={() => {
+                            setSelectedTask(null);
+                            setEditingTask(false);
+                        }}
+                    >
+                        <div
+                            className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl shadow-black/40"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-start justify-between border-b border-gray-800 p-6">
+                                <div className="min-w-0 flex-1">
+                                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                                        {editingTask ? "Edit task" : "Task details"}
+                                    </p>
 
-                                {editingTask ? (
-                                    <select
-                                        value={selectedTask.course}
-                                        onChange={(e) =>
-                                            setSelectedTask({
-                                                ...selectedTask,
-                                                course: e.target.value
-                                            })
-                                        }
-                                        className="bg-gray-800 border border-gray-700 rounded-lg p-2"
-                                    >
-                                        <option value="Math">
-                                            Math
-                                        </option>
+                                    {editingTask ? (
+                                        <input
+                                            value={selectedTask.title}
+                                            onChange={(e) =>
+                                                setSelectedTask({
+                                                    ...selectedTask,
+                                                    title: e.target.value
+                                                })
+                                            }
+                                            placeholder="Task title"
+                                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xl font-bold text-white outline-none transition focus:border-emerald-500"
+                                        />
+                                    ) : (
+                                        <h2 className="break-words text-2xl font-bold text-white">
+                                            {selectedTask.title}
+                                        </h2>
+                                    )}
+                                </div>
 
-                                        <option value="Databases">
-                                            Databases
-                                        </option>
+                                <button
+                                    onClick={() => {
+                                        setSelectedTask(null);
+                                        setEditingTask(false);
+                                    }}
+                                    className="ml-4 rounded-lg p-2 text-gray-400 transition hover:bg-gray-800 hover:text-white"
+                                    aria-label="Close modal"
+                                >
+                                    <X size={22} />
+                                </button>
+                            </div>
 
-                                        <option value="Web Development">
-                                            Web Development
-                                        </option>
-                                    </select>
-                                ) : (
-                                    <div className="flex items-center m-2 gap-3">
-                                        <BookOpen size={30}/>
-                                        <span>{selectedTask.course}</span>
-                                    </div>
-                                )}
+                            {/* Task details */}
+                            <div className="space-y-5 p-6">
 
-                                {editingTask ? (
-                                    <select
-                                        value={selectedTask.priority}
-                                        onChange={(e) =>
-                                            setSelectedTask({
-                                                ...selectedTask,
-                                                priority: e.target.value
-                                            })
-                                        }
-                                        className="bg-gray-800 border border-gray-700 rounded-lg p-2"
-                                    >
-                                        <option value="High">
-                                            High
-                                        </option>
+                                {/* Course */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-gray-400">
+                                        Course
+                                    </label>
 
-                                        <option value="Medium">
-                                            Medium
-                                        </option>
+                                    {/* if editing task find the course and give its course id */}
+                                    {editingTask ? (
+                                        <select
+                                            value={selectedTask.courseId || ""}
+                                            onChange={(e) =>
+                                                setSelectedTask({
+                                                    ...selectedTask,
+                                                    courseId: e.target.value
+                                                })
+                                            }
+                                            className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white outline-none transition focus:border-emerald-500"
+                                        >
+                                            <option value="" disabled>
+                                                Select a course
+                                            </option>
 
-                                        <option value="Low">
-                                            Low
-                                        </option>
-                                    </select>
-                                ) : (
-                                    <div className="flex items-center m-2 gap-3">
-                                        <Bell size={30}/>
-                                        <span>{selectedTask.priority}</span>
-                                    </div>
-                                )}
+                                            {courses.map((course) => (
+                                                <option key={course._id} value={course._id}>
+                                                    {course.courseName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        // if NOT editing task return the course using the courseId
+                                    ) : (
+                                        (() => {
+                                            const course = courses.find(
+                                                c => c._id === selectedTask.courseId
+                                            );
 
-                                {editingTask ? (
-                                    <input
-                                        value={selectedTask.dueDate?.slice(0, 10) || ""}
-                                        onChange={(e) =>
-                                            setSelectedTask({
-                                                ...selectedTask,
-                                                dueDate: e.target.value
-                                            })
-                                        }
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-600 transition-colors"
-                                        type="date"
-                                    />
-                                ) : (
-                                    <div className="flex items-center m-2 gap-3">
-                                        <CalendarDays size={30}/>
-                                        <span>{selectedTask.dueDate?.slice(0, 10) || "No due date"}</span>
-                                    </div>
-                                )}
+                                            return (
+                                                <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-950 p-3">
+                                                    <BookOpen className="shrink-0 text-emerald-400" size={21} />
 
-                                <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8">
-                                    <button
-                                        onClick={() => {
-                                            toggleCompletedTask(selectedTask._id)
-                                            setSelectedTask(null)
-                                        }}
-                                        className="mt-3 bg-green-900 px-1 rounded-xl cursor-pointer"
-                                    >
-                                        <div className="flex items-center m-2 gap-3">
-                                            <span>
-                                                {selectedTask.completed ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <RotateCcw size={25}/>
-                                                        <span>Mark as Pending</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2">
-                                                        <Check size={25}/>
-                                                        <span>Mark as Completed</span>
-                                                    </div>
-                                                )}
+                                                    <span
+                                                        className={`rounded-lg px-3 py-1 text-sm font-medium ${
+                                                            courseColors[course?.courseColor] || "bg-gray-700"
+                                                        }`}
+                                                    >
+                                                        {course?.courseName || "Unknown course"}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()
+                                    )}
+                                </div>
+
+                                {/* Priority */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-gray-400">
+                                        Priority
+                                    </label>
+
+                                    {editingTask ? (
+                                        <select
+                                            value={selectedTask.priority}
+                                            onChange={(e) =>
+                                                setSelectedTask({
+                                                    ...selectedTask,
+                                                    priority: e.target.value
+                                                })
+                                            }
+                                            className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white outline-none transition focus:border-emerald-500"
+                                        >
+                                            <option value="High">High</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Low">Low</option>
+                                        </select>
+                                    ) : (
+                                        <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-950 p-3">
+                                            <Bell className="shrink-0 text-emerald-400" size={21} />
+
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                                                    selectedTask.priority === "High"
+                                                        ? "bg-red-500/15 text-red-400"
+                                                        : selectedTask.priority === "Medium"
+                                                        ? "bg-yellow-500/15 text-yellow-400"
+                                                        : "bg-green-500/15 text-green-400"
+                                                }`}
+                                            >
+                                                {selectedTask.priority}
                                             </span>
                                         </div>
-                                    </button>
+                                    )}
+                                </div>
+
+                                {/* Due date */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-gray-400">
+                                        Due date
+                                    </label>
+
+                                    {editingTask ? (
+                                        <input
+                                            type="date"
+                                            value={selectedTask.dueDate?.slice(0, 10) || ""}
+                                            onChange={(e) =>
+                                                setSelectedTask({
+                                                    ...selectedTask,
+                                                    dueDate: e.target.value
+                                                })
+                                            }
+                                            className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white outline-none transition focus:border-emerald-500"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-950 p-3">
+                                            <CalendarDays className="shrink-0 text-emerald-400" size={21} />
+
+                                            <span className="text-gray-200">
+                                                {selectedTask.dueDate?.slice(0, 10) || "No due date"}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Completion status */}
+                                <div className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-950 p-4">
+                                    <div>
+                                        <p className="text-sm text-gray-400">Status</p>
+                                        <p className={`mt-1 font-semibold ${
+                                            selectedTask.completed
+                                                ? "text-emerald-400"
+                                                : "text-red-400"
+                                        }`}>
+                                            {selectedTask.completed ? "Completed" : "Incomplete"}
+                                        </p>
+                                    </div>
+
+                                    <span className={`rounded-full p-2 ${
+                                        selectedTask.completed
+                                            ? "bg-emerald-500/15 text-emerald-400"
+                                            : "bg-orange-500/15 text-red-400"
+                                    }`}>
+                                        {selectedTask.completed
+                                            ? <Check size={22} />
+                                            : <CalendarDays size={22} />
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col-reverse gap-3 border-t border-gray-800 bg-gray-950/50 p-6 sm:flex-row sm:justify-between">
+                                <button
+                                    onClick={() => {
+                                        toggleCompletedTask(selectedTask._id);
+                                        setSelectedTask(null);
+                                        setEditingTask(false);
+                                    }}
+                                    className= {`inline-flex items-center justify-center gap-2 rounded-xl border  ${selectedTask.completed ? "bg-amber-800 hover:bg-amber-700" : "bg-emerald-700 hover:bg-emerald-600" } border-gray-700 px-4 py-3 font-medium text-gray-200 transition`}
+                                >
+                                    {selectedTask.completed ? (
+                                        <>
+                                            <RotateCcw size={18} />
+                                            Mark pending
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check size={18} />
+                                            Complete task
+                                        </>
+                                    )}
+                                </button>
+
+                                <div className="flex gap-3">
 
                                     <button
                                         onClick={() => {
@@ -499,16 +631,9 @@ function Calendar() {
                                                 setEditingTask(true);
                                             }
                                         }}
-                                        className="mt-3 bg-blue-900 px-4 py-2 rounded-xl cursor-pointer"
+                                        className="flex-1 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 active:scale-[0.98] sm:flex-none"
                                     >
-                                        {editingTask ? "Save" : "Edit"}
-                                    </button>
-
-                                    <button
-                                        onClick={() => setSelectedTask(null)}
-                                        className="mt-3 bg-red-900 px-4 py-2 rounded-xl cursor-pointer"
-                                    >
-                                        Close
+                                        {editingTask ? "Save changes" : "Edit task"}
                                     </button>
                                 </div>
                             </div>

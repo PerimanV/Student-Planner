@@ -1,27 +1,32 @@
 import Header from '../components/Header';
 import { useState, useEffect  } from 'react';
 import { ChevronDown, Plus, X, Pencil, Trash2, Sparkles  } from 'lucide-react';
+import ReactMarkdown from "react-markdown";
 
 function Notes() { 
-    const [courses, setCourses] = useState(() => {
-        const savedCourses = localStorage.getItem("courses");
+    const [courses, setCourses] = useState([])
+    useEffect(() => {
+        fetch("http://localhost:5000/api/courses")
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching tasks:", error);
+        })
+    }, [])
 
-        if (savedCourses) {
-            return JSON.parse(savedCourses);
-        } else {
-            return [];
-        }
-    }) 
-
-    const [notes, setNotes] = useState(() => {
-        const savedNotes = localStorage.getItem("notes");
-
-        if (savedNotes) {
-            return JSON.parse(savedNotes);
-        } else {
-            return [];
-        }
-    })
+    const [notes, setNotes] = useState([])
+    useEffect(() => {
+        fetch("http://localhost:5000/api/notes")
+        .then(response => response.json())
+        .then(data => {
+            setNotes(data);
+        })
+        .catch(error => {
+            console.error("Error fetching tasks:", error);
+        })
+    }, [])
 
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -29,6 +34,11 @@ function Notes() {
     const [noteContent, setNoteContent] = useState("");
     const [error, setError] = useState("");
     const [editingNote, setEditingNote] = useState(null);
+    const [summary, setSummary] = useState("");
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [summaryError, setSummaryError] = useState("");
+    const [showSummaryModal, setShowSummaryModal] = useState(false);
+    const [summaryNoteTitle, setSummaryNoteTitle] = useState("");
 
     const courseColors = {
         blue: "bg-blue-600/70",
@@ -54,28 +64,40 @@ function Notes() {
         red: "border-l-red-600/50"
     }
 
-    function addNote() {
+    async function addNote() {
         if (!noteTitle) {
             setError("Title is required")
             return
         }
 
         setError("");
+        
+        try {
+            const response = await fetch("http://localhost:5000/api/notes", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId: "6ac662242783449c4c5ce6ce",
+                courseId: selectedCourse?._id,
+                title: noteTitle,
+                content: noteContent,
+                createdAt: Date.now
+            })})
+        
+            if(!response.ok) {
+                throw new Error("Failed to create task");
+            }
 
-        const newNote = {
-            id: Date.now(),
-            title: noteTitle,
-            content: noteContent,
-            course: selectedCourse.courseName
+            const newNote = await response.json();
+            setNotes([...notes, newNote]);
+            closeModal();
+        } catch (error) {
+            console.error("Error creating note:", error)
         }
-
-        setNotes([...notes, newNote]);
-        closeModal();
+        
     }
-
-    useEffect(() => {
-        localStorage.setItem("notes", JSON.stringify(notes));
-    }, [notes]);
 
     function closeModal() {
         setShowModal(false);
@@ -90,33 +112,89 @@ function Notes() {
         setNoteTitle(note.title);
         setNoteContent(note.content);
         setSelectedCourse(
-            courses.find(course => course.courseName === note.course)
+            courses.find(course => course._id === note.courseId)
         );
         setShowModal(true);
     }
 
-    function saveEditedNote() {
-        const updatedNotes = notes.map(note => {
-            if (note.id === editingNote.id) {
-                return {
-                    ...note,
-                    title: noteTitle,
-                    content: noteContent
-                };
-            }
-            else {
-                return note;
-            }
-        });
+    async function saveEditedNote() {
+        
+        try{
+            const response = await fetch(`http://localhost:5000/api/notes/${editingNote._id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        title: noteTitle,
+                        content: noteContent
+                    })
+                })
 
-        setNotes(updatedNotes);
-        closeModal();
+                
+            if (!response.ok) {
+                throw new Error("Failed to update course");
+            }
+
+            const updatedNote = await response.json();
+            
+            setNotes(prevNotes =>
+                prevNotes.map(note =>
+                    note._id === updatedNote._id ? updatedNote : note
+                )
+            );
+            closeModal();
+        } catch (error) {
+            console.error("Error updating course:", error);
+        }
     }
 
-    function deleteNote(noteId) {
-        const updatedNotes = notes.filter(note => note.id !== noteId);
+    async function deleteNote(noteId) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, { 
+                method: "DELETE"
+            })
 
-        setNotes(updatedNotes);
+             if (!response.ok) {
+                throw new Error("Failed to delete note");
+            }
+
+            // remove task from front end
+            setNotes(notes =>
+                notes.filter(note => note._id !== noteId)
+            );
+        } catch (error) {
+            console.error("Error deleting note:", error);
+        }
+    }
+
+    async function summarizeNote(note) {
+        setSummaryNoteTitle(note.title);
+        setIsSummarizing(true);
+        setSummaryError("");
+        setSummary("");
+        setShowSummaryModal(true);
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/notes/${note._id}/summarize`, {
+                    method: "POST"
+                }
+            );
+
+            const data = await response.json();
+
+            if(!response.ok) {
+                throw new Error(data.message || "Failed to summarize note");
+            }
+
+            setSummary(data.summary);
+
+        } catch (error) {
+            console.error("Error summarizing note:", error);
+            setSummaryError(error.message);
+        } finally {
+            setIsSummarizing(false);
+        }
     }
 
     return (
@@ -141,7 +219,7 @@ function Notes() {
                                 courses.map(course => {
 
                                     const courseNotes = notes.filter(
-                                        note => note.course === course.courseName
+                                        note => note.courseId === course._id
                                     );
 
                                     return (
@@ -230,7 +308,7 @@ function Notes() {
                                                         ) : (
                                                             courseNotes.map(note => (
                                                                 <div
-                                                                    key={note.id}
+                                                                    key={note._id}
                                                                     className={`bg-gray-800/50 rounded-xl p-4 mb-3 border-l-3 ${courseBorderColors[selectedCourse.courseColor]}`}
                                                                 >
                                                                     <div className="flex items-start justify-between gap-4">
@@ -245,7 +323,7 @@ function Notes() {
                                                                             </p>
 
                                                                             <p className="text-sm text-gray-500 mt-3">
-                                                                                Date: {new Date(note.id).toLocaleDateString("en-US", {
+                                                                                Date: {new Date(note._id).toLocaleDateString("en-US", {
                                                                                     month: "long",
                                                                                     day: "numeric",
                                                                                     year: "numeric"
@@ -275,7 +353,7 @@ function Notes() {
                                                                             {/* Delete */}
                                                                             <button
                                                                                 className="p-2 rounded-lg text-red-500 hover:text-red-400 border border-gray-600 hover:bg-red-500/10 transition-colors cursor-pointer"
-                                                                                onClick={() => deleteNote(note.id)}
+                                                                                onClick={() => deleteNote(note._id)}
                                                                             >
                                                                                 <Trash2 size={18} />
                                                                             </button>
@@ -397,6 +475,116 @@ function Notes() {
 
                     </div>
                 )}
+
+                {showSummaryModal && (
+                    <div
+                        className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm
+                        flex items-center justify-center p-4"
+                        onClick={() => setShowSummaryModal(false)}
+                    >
+                        {/* Main Modal */}
+                        <div
+                            className="bg-gray-900 border border-gray-800 rounded-2xl
+                            shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between
+                                px-6 py-5 border-b border-gray-800 shrink-0">
+
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        {summaryNoteTitle}
+                                    </h2>
+
+                                    <p className="text-sm text-gray-400 mt-1">
+                                        Summarization
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowSummaryModal(false)}
+                                    className="p-2 rounded-lg text-gray-400
+                                    hover:text-white hover:bg-gray-800
+                                    transition-colors cursor-pointer"
+                                    aria-label="Close summary"
+                                >
+                                    <X size={22} />
+                                </button>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="p-6 overflow-y-auto min-h-[250px]">
+
+                                {/* Loading State */}
+                                {isSummarizing && (
+                                    <div className="flex flex-col items-center
+                                        justify-center py-16 gap-4">
+
+                                        <div className="w-10 h-10 border-4
+                                            border-purple-500/30 border-t-purple-400
+                                            rounded-full animate-spin" />
+
+                                        <p className="text-gray-300 font-medium">
+                                            Generating your study guide...
+                                        </p>
+
+                                        <p className="text-sm text-gray-500">
+                                            This may take a few moments.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Error State */}
+                                {!isSummarizing && summaryError && (
+                                    <div className="rounded-xl border border-red-500/30
+                                        bg-red-500/10 p-4">
+
+                                        <h3 className="font-semibold text-red-400">
+                                            Failed to generate study guide
+                                        </h3>
+
+                                        <p className="text-sm text-red-300 mt-2">
+                                            {summaryError}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Success State */}
+                                {!isSummarizing && !summaryError && summary && (
+                                    <article
+                                        className="prose prose-invert max-w-none
+                                        prose-headings:text-purple-300
+                                        prose-strong:text-white
+                                        prose-a:text-purple-400"
+                                    >
+                                        <ReactMarkdown>
+                                            {summary}
+                                        </ReactMarkdown>
+                                    </article>
+                                )}
+
+                            </div>
+
+                            {/* Modal Footer */}
+                            {!isSummarizing && (
+                                <div className="px-6 py-4 border-t border-gray-800
+                                    flex justify-end shrink-0">
+
+                                    <button
+                                        onClick={() => setShowSummaryModal(false)}
+                                        className="px-5 py-2.5 rounded-xl
+                                        bg-gray-800 text-gray-300 hover:bg-gray-700
+                                        hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </main>
         </div>
     );
