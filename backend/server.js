@@ -1,17 +1,24 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const User = require("./models/User");
-const Course = require("./models/Course");
-const Task = require("./models/Task");
-const Note = require("./models/Note");
-const OpenAI = require("openai");
-
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import User from "./models/User.js";
+import Course from "./models/Course.js";
+import Task from "./models/Task.js";
+import Note from "./models/Note.js";
+import OpenAI from "openai";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth.js";
+import "dotenv/config";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}));
+
+app.all("/api/auth/{*any}", toNodeHandler(auth));
+
 app.use(express.json());
 
 const ai = new OpenAI({

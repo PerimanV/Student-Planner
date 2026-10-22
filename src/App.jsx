@@ -6,6 +6,8 @@ import Calendar from './pages/Calendar';
 import Courses from './pages/Courses';
 import Notes from './pages/Notes';
 import Profile from './pages/Profile';
+import Register from "./pages/Register";
+import Login from "./pages/Login";
 
 const router = createBrowserRouter([
   {path:"/", element: <Dashboard />},
@@ -14,7 +16,9 @@ const router = createBrowserRouter([
   {path: "/calendar", element: <Calendar />},
   {path: "/courses", element: <Courses />},
   {path: "/notes", element: <Notes />},
-  {path: "/profile", element: <Profile />}
+  {path: "/profile", element: <Profile />},
+  {path: "/register", element: <Register />},
+  {path: "/login", element: <Login />}
 ]);
 
 function App() {
