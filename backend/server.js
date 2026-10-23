@@ -1,13 +1,14 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import User from "./models/User.js";
 import Course from "./models/Course.js";
 import Task from "./models/Task.js";
 import Note from "./models/Note.js";
 import OpenAI from "openai";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
+import Profile from "./models/Profile.js";
+import { fromNodeHeaders } from "better-auth/node";
 import "dotenv/config";
 
 const app = express();
@@ -24,6 +25,29 @@ app.use(express.json());
 const ai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
+
+async function requireAuth(req, res, next) {
+    try {
+        const session = await auth.api.getSession({
+            headers: fromNodeHeaders(req.headers)
+        });
+
+        if (!session) {
+            return res.status(401).json({
+                message: "You must be logged in."
+            });
+        }
+
+        req.user = session.user;
+        next();
+    } catch (error) {
+        console.error("Session verification failed:", error);
+
+        return res.status(500).json({
+            message: "Failed to verify session."
+        });
+    }
+}
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
@@ -94,16 +118,65 @@ app.post("/api/notes/:id/summarize", async (req, res) => {
     }
 });
 
-// ~~~ USERS ROUTES ~~~
+// ~~~ PROILE ROUTES ~~~
 
-app.post("/api/users", async (req, res) => {
+app.get("/api/profile", requireAuth, async (req, res) => {
     try {
-        const newUser = await User.create(req.body);
+        let profile = await Profile.findOne({
+            userId: req.user.id
+        });
 
-        res.json(newUser)
+        if (!profile) {
+            profile = await Profile.create({
+                userId: req.user.id
+            });
+        }
+
+        res.json({
+            name: req.user.name,
+            email: req.user.email,
+            university: profile.university,
+            department: profile.department,
+            year: profile.year
+        });
     } catch (error) {
+        console.error("Error fetching profile:", error);
+
         res.status(500).json({
-            message: "Failed to create user"
+            message: "Failed to fetch profile."
+        });
+    }
+});
+
+app.put("/api/profile", requireAuth, async (req, res) => {
+    try {
+        const profile = await Profile.findOneAndUpdate(
+            { userId: req.user.id },
+            {
+                university: req.body.university,
+                department: req.body.department,
+                year: req.body.year
+            },
+            {
+                new: true,
+                upsert: true,
+                runValidators: true,
+                setDefaultsOnInsert: true
+            }
+        );
+
+        res.json({
+            name: req.user.name,
+            email: req.user.email,
+            university: profile.university,
+            department: profile.department,
+            year: profile.year
+        });
+    } catch (error) {
+        console.error("Error saving profile:", error);
+
+        res.status(500).json({
+            message: "Failed to save profile."
         });
     }
 });

@@ -3,45 +3,139 @@ import { Blobatar } from "@blobatar/react";
 import "blobatar/motion.css";
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { authClient } from "../lib/auth-client";
 
 function Profile() {
-    const [profile, setProfile] = useState(() => {
-        const savedProfile = localStorage.getItem("profile");
-
-        if (savedProfile) {
-            return JSON.parse(savedProfile);
-        } else {
-            return {
-                name: "John Varouxis",
-                email: "dit22019@go.uop.gr",
-                university: "University of Peloponnese",
-                department: "Computer Science",
-                year: "4th Year"
-            };
-        }
-    });
-
+    
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [editingProfile, setEditingProfile] = useState(false);
-    const [editName, setEditName] = useState(profile.name);
-    const [editEmail, setEditEmail] = useState(profile.email);
-    const [editUniversity, setEditUniversity] = useState(profile.university);
-    const [editDepartment, setEditDepartment] = useState(profile.department);
-    const [editYear, setEditYear] = useState(profile.year);
+
+    const [editName, setEditName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [editUniversity, setEditUniversity] = useState("");
+    const [editDepartment, setEditDepartment] = useState("");
+    const [editYear, setEditYear] = useState("");
 
     useEffect(() => {
-        localStorage.setItem("profile", JSON.stringify(profile));
-    }, [profile]);
+        async function loadProfile() {
+            try {
+                const response = await fetch(
+                    "http://localhost:5000/api/profile",
+                    {
+                        credentials: "include" // send cookies to BetterAuth
+                    }
+                );
 
-    function saveProfile() {
-        setProfile({
-            name: editName,
-            email: editEmail,
-            university: editUniversity,
-            department: editDepartment,
-            year: editYear
-        });
+                if (!response.ok) {
+                    throw new Error("Failed to load profile");
+                }
 
-        setEditingProfile(false);
+                const data = await response.json();
+
+                setProfile(data);
+                setEditName(data.name);
+                setEditEmail(data.email)
+                setEditUniversity(data.university);
+                setEditDepartment(data.department);
+                setEditYear(data.year);
+            } catch (error) {
+                console.error("Error loading profile:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadProfile();
+    }, []);
+
+    async function saveProfile() {
+        try {
+            // Update the name only if it changed.
+            if (editName.trim() !== profile.name) {
+                const nameResult = await authClient.updateUser({
+                    name: editName.trim()
+                });
+
+                if (nameResult.error) {
+                    throw new Error(nameResult.error.message);
+                }
+            }
+
+            // Update the email only if it changed.
+            if (editEmail.trim().toLowerCase() !== profile.email.toLowerCase()) {
+                const emailResult = await authClient.changeEmail({
+                    newEmail: editEmail.trim()
+                });
+
+                if (emailResult.error) {
+                    throw new Error(emailResult.error.message);
+                }
+            }
+
+            // Save the additional profile fields.
+            const response = await fetch(
+                "http://localhost:5000/api/profile",
+                {
+                    method: "PUT",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        university: editUniversity,
+                        department: editDepartment,
+                        year: editYear
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to save profile");
+            }
+
+            setProfile({
+                ...data,
+                name: editName.trim(),
+                email: editEmail.trim()
+            });
+
+            setEditingProfile(false);
+        } catch (error) {
+            console.error("Error saving profile:", error);
+        }
+    }
+
+    const navigate = useNavigate();
+
+    async function handleLogout() {
+        const result = await authClient.signOut();
+
+        if (result.error) {
+            console.error("Logout failed:", result.error);
+            return;
+        }
+
+        navigate("/login");
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+                <p className="text-gray-400">Loading profile...</p>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+                <p>Unable to load your profile. Please try again.</p>
+            </div>
+        );
     }
 
     return (
@@ -65,12 +159,23 @@ function Profile() {
                         {profile.department}
                     </p>
 
-                    <button
-                        onClick={() => setEditingProfile(true)}
-                        className="mt-5 px-5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer"
-                    >
-                        Edit Profile
-                    </button>
+
+                    <div className="mt-5 flex items-center gap-3">
+                        <button
+                            onClick={() => setEditingProfile(true)}
+                            className="w-36 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition-colors hover:bg-gray-700 cursor-pointer"
+                        >
+                            Edit Profile
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className="w-36 rounded-xl bg-red-500 px-5 py-3 font-semibold text-white transition-colors hover:bg-red-500 cursor-pointer"
+                        >
+                            Log out
+                        </button>
+                    </div>
+
                 </div>
                 <div className="bg-gray-900 rounded-2xl p-6 mt-6">
                     <h2 className="text-2xl font-bold mb-5">
