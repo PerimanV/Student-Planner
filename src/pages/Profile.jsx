@@ -5,11 +5,11 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
+import { useProfile } from "../context/ProfileContext";
 
 function Profile() {
     
-    const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { profile, setProfile, loading } = useProfile();
     const [editingProfile, setEditingProfile] = useState(false);
 
     const [editName, setEditName] = useState("");
@@ -17,38 +17,6 @@ function Profile() {
     const [editUniversity, setEditUniversity] = useState("");
     const [editDepartment, setEditDepartment] = useState("");
     const [editYear, setEditYear] = useState("");
-
-    useEffect(() => {
-        async function loadProfile() {
-            try {
-                const response = await fetch(
-                    "http://localhost:5000/api/profile",
-                    {
-                        credentials: "include" // send cookies to BetterAuth
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error("Failed to load profile");
-                }
-
-                const data = await response.json();
-
-                setProfile(data);
-                setEditName(data.name);
-                setEditEmail(data.email)
-                setEditUniversity(data.university);
-                setEditDepartment(data.department);
-                setEditYear(data.year);
-            } catch (error) {
-                console.error("Error loading profile:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadProfile();
-    }, []);
 
     async function saveProfile() {
         try {
@@ -109,6 +77,16 @@ function Profile() {
         }
     }
 
+    function openEditProfile() {
+        setEditName(profile.name);
+        setEditEmail(profile.email);
+        setEditUniversity(profile.university);
+        setEditDepartment(profile.department);
+        setEditYear(profile.year);
+
+        setEditingProfile(true);
+    }
+
     const navigate = useNavigate();
 
     async function handleLogout() {
@@ -162,7 +140,7 @@ function Profile() {
 
                     <div className="mt-5 flex items-center gap-3">
                         <button
-                            onClick={() => setEditingProfile(true)}
+                            onClick={openEditProfile}
                             className="w-36 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition-colors hover:bg-gray-700 cursor-pointer"
                         >
                             Edit Profile

@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Blobatar } from "@blobatar/react";
 import "blobatar/motion.css";
-import { useEffect, useState } from "react";
+import { useEffect } from 'react';
+import { useProfile } from "../context/ProfileContext";
 
 function Header() {
     const location = useLocation();
 
-    const [profile, setProfile] = useState(null);
+    const { profile, loading } = useProfile();
 
     useEffect(() => {
         async function loadProfile() {
@@ -69,7 +70,7 @@ function Header() {
                     className="flex items-center gap-3"
                 >
                     <span className="text-lg font-medium">
-                        {profile ? profile.name : "Loading..."}
+                        {loading ? "Loading..." : profile?.name ?? "User"}
                     </span>
 
                     {profile && (

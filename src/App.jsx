@@ -9,9 +9,15 @@ import Notes from "./pages/Notes";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import { ProfileProvider } from "./context/ProfileContext";
 
+// keep provider loaded in every page to avoid requets
 function Layout() {
-    return <Outlet />;
+    return (
+        <ProfileProvider>
+            <Outlet />
+        </ProfileProvider>
+    );
 }
 
 const router = createBrowserRouter([
