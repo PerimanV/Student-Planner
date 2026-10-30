@@ -6,7 +6,9 @@ import ReactMarkdown from "react-markdown";
 function Notes() { 
     const [courses, setCourses] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses")
+        fetch("http://localhost:5000/api/courses", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setCourses(data);
@@ -18,7 +20,9 @@ function Notes() {
 
     const [notes, setNotes] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/notes")
+        fetch("http://localhost:5000/api/notes", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setNotes(data);
@@ -75,6 +79,7 @@ function Notes() {
         try {
             const response = await fetch("http://localhost:5000/api/notes", {
             method: "POST",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json"
             },
@@ -122,6 +127,7 @@ function Notes() {
         try{
             const response = await fetch(`http://localhost:5000/api/notes/${editingNote._id}`, {
                     method: "PUT",
+                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json"
                     },
@@ -152,7 +158,8 @@ function Notes() {
     async function deleteNote(noteId) {
         try {
             const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, { 
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             })
 
              if (!response.ok) {
@@ -177,7 +184,8 @@ function Notes() {
 
         try {
             const response = await fetch(`http://localhost:5000/api/notes/${note._id}/summarize`, {
-                    method: "POST"
+                    method: "POST",
+                    credentials: "include"
                 }
             );
 

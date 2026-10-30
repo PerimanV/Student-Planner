@@ -9,6 +9,7 @@ import Notes from "./pages/Notes";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Goals from "./pages/Goals";
 import { ProfileProvider } from "./context/ProfileContext";
 
 // keep provider loaded in every page to avoid requets
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
             { path: "/profile", element: <Profile /> },
             { path: "/register", element: <Register /> },
             { path: "/login", element: <Login /> },
+            { path: "/goals", element: <Goals /> },
             { path: "*", element: <NotFound /> },
         ],
     },

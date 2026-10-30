@@ -8,25 +8,6 @@ import ScheduleCard from '../components/ScheduleCard';
 
 function Dashboard() {
 
-    // test
-    useEffect(() => {
-        fetch("http://localhost:5000/api/test", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                courseName: "Databases",
-                courseColor: "blue"
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-            });
-    }, []);
-
-
     // Load courses
     const [courses] = useState(() => {
         const savedCourses = localStorage.getItem('courses');

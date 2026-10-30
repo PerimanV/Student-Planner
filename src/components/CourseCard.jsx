@@ -11,18 +11,18 @@ function CourseCard({
     onDelete
 }) {
     const courseColors = {
-        blue: "bg-blue-700",
-        green: "bg-emerald-700",
-        purple: "bg-purple-700",
-        orange: "bg-orange-700",
-        red: "bg-red-700"
+        blue: "bg-blue-800",
+        green: "bg-emerald-800",
+        purple: "bg-purple-800",
+        orange: "bg-orange-800",
+        red: "bg-red-800"
     }
     const [expanded, setExpanded] = useState(false);
     return (
         <div onClick={() => setExpanded(!expanded)} className="bg-gray-900 rounded-xl cursor-pointer">
             <h2 className={`${courseColors[color]} flex justify-between gap-3 rounded-t-xl p-3 text-2xl text-center`}>
                 <button
-                    onClick={() => {
+                    onClick={(event) => {
                         event.stopPropagation();
                         onEdit();
                     }}
@@ -33,7 +33,7 @@ function CourseCard({
                 </button>
                 <div>{course}</div>
                 <button
-                    onClick={() => {
+                    onClick={(event) => {
                         event.stopPropagation();
                         onDelete();
                     }}
@@ -64,7 +64,6 @@ function CourseCard({
                     {pending}
                 </span>
             </div>
-            {/* TODO: make this look better */}
             {expanded && (
     <div className="px-3 pb-3">
 
@@ -77,7 +76,7 @@ function CourseCard({
             ) : (
                 tasks.map(task => (
                     <div
-                        key={task.id}
+                        key={task._id}
                         className="bg-gray-950 rounded-xl p-3 mb-2 flex items-center justify-between hover:bg-gray-800 transition-colors"
                     >
 
@@ -119,11 +118,11 @@ function CourseCard({
                             {task.priority}
                         </span>
 
-                                </div>
-                            ))
-                        )}
+                            </div>
+                        ))
+                    )}
 
-                    </div>
+                </div>
 
                 </div>
             )}

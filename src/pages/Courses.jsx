@@ -4,25 +4,53 @@ import CourseCard from '../components/CourseCard';
 import { useState, useEffect } from 'react';
 
 function Courses() {
-    const tasksInit = localStorage.getItem("tasks");
-    const tasks = tasksInit ? JSON.parse(tasksInit) : [];
+    const [tasks, setTasks] = useState([])
+    useEffect(() => {
+        fetch("http://localhost:5000/api/tasks", {
+                    credentials: "include"
+                }
+            )
+            .then(response => response.json())
+            .then(data => {
+                setTasks(data)
+            })
+            .catch(error => {
+            console.error("Error fetching tasks:", error);
+        })
+    }, []);
+
     const [showModal, setShowModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const [courses, setCourses] = useState([]);
     const [courseName, setCourseName] = useState("");
     const [courseColor, setCourseColor] = useState("");
     const [error, setError] = useState("");
-
+    
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses")
-        .then(response => response.json())
-        .then(data => {
-            setCourses(data);
-        })
-        .catch(error => {
-            console.error("Error fetching courses:", error);
-        });
+        async function fetchCourses() {
+            try {
+                const response = await fetch(
+                    "http://localhost:5000/api/courses",
+                    {
+                        credentials: "include"
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch courses: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                setCourses(data);
+            } catch (error) {
+                console.error("Error fetching courses:", error);
+            }
+        }
+
+        fetchCourses();
     }, []);
+
 
     function closeModal() {
         setShowModal(false);
@@ -57,6 +85,7 @@ function Courses() {
         try {
             const response  = await fetch("http://localhost:5000/api/courses", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -92,12 +121,12 @@ function Courses() {
 
     
     async function saveEditedCourse() {
-        const oldCourseName = editingCourse.courseName;
 
         try {
             const response = await fetch(
                 `http://localhost:5000/api/courses/${editingCourse._id}`, {
                     method: "PUT",
+                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json"
                     },
@@ -122,25 +151,6 @@ function Courses() {
                 }
             });
 
-            // Update tasks of the old course
-            if (oldCourseName !== courseName) {
-                const savedTasks = localStorage.getItem("tasks");
-                const tasks = savedTasks ? JSON.parse(savedTasks) : [];
-
-                const updatedTasks = tasks.map(task => {
-                    if (task.course === oldCourseName) {
-                        return {
-                            ...task,
-                            course: courseName
-                        };
-                    } else {
-                        return task;
-                    }
-                });
-
-                localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-            }
-
             setCourses(updatedCourses);
             closeModal();
 
@@ -155,7 +165,8 @@ function Courses() {
             const response = await fetch(
                 `http://localhost:5000/api/courses/${courseToDelete._id}`,
                 {
-                    method: "DELETE"
+                    method: "DELETE",
+                    credentials: "include"
                 }
             );
 
@@ -186,10 +197,10 @@ function Courses() {
                         <div className='cursor-pointer text-emerald-600'> <Plus className='w-10 h-10' strokeWidth={3} /> </div>
                 </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
-                    {courses.map(course => {
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8 items-start">
+                    {courses.length > 0 ? (courses.map(course => {
                         const courseTasks = tasks.filter(
-                            task => task.course === course.courseName
+                            task => String(task.courseId) === String(course._id)
                         );
 
                         const completed = courseTasks.filter(
@@ -200,9 +211,10 @@ function Courses() {
                             task => !task.completed
                         ).length;
 
-                        return ( 
-                            <CourseCard 
-                                key={course.courseName}
+                        console.log("Course:", course.courseName, "ID:", course._id);
+                        return (
+                            <CourseCard
+                                key={course._id}
                                 course={course.courseName}
                                 color={course.courseColor}
                                 tasks={courseTasks}
@@ -210,10 +222,14 @@ function Courses() {
                                 pending={pending}
                                 onEdit={() => editCourse(course)}
                                 onDelete={() => deleteCourse(course)}
-                                onClick={() => toggleExpandCourse(course.courseName)}
                             />
                         );
-                    })}
+                    })
+                ): (
+                    <div>No courses</div>
+                )
+                    
+                    }
                 </div>
                 {showModal && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">

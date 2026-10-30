@@ -19,7 +19,9 @@ function Tasks() {
     //initialize courses if any exist
     const [courses, setCourses] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses")
+        fetch("http://localhost:5000/api/courses", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setCourses(data);
@@ -40,7 +42,9 @@ function Tasks() {
     //initialize tasks if any exist
     const [tasks, setTasks] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/tasks")
+        fetch("http://localhost:5000/api/tasks", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setTasks(data);
@@ -71,6 +75,7 @@ function Tasks() {
         try {
             const response = await fetch("http://localhost:5000/api/tasks", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -115,7 +120,8 @@ function Tasks() {
     async function deleteTask(id) {
         try {
             const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: "include"
             });
 
             if (!response.ok) {
@@ -138,6 +144,7 @@ function Tasks() {
         try {
             const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
                 method: 'PUT',
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 },

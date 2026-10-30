@@ -7,7 +7,7 @@ import { useProfile } from "../context/ProfileContext";
 function Header() {
     const location = useLocation();
 
-    const { profile, loading } = useProfile();
+    const { profile, setProfile, loading } = useProfile();
 
     useEffect(() => {
         async function loadProfile() {
@@ -35,11 +35,12 @@ function Header() {
 
     const navLinks = [
         { path: "/", label: "Home" },
+        { path: "/goals", label: "Goals" },
         { path: "/courses", label: "Courses" },
         { path: "/calendar", label: "Calendar" },
         { path: "/tasks", label: "Tasks" },
         { path: "/notes", label: "Notes" },
-        { path: "/profile", label: "Profile" }
+        { path: "/profile", label: "Profile" },
     ];
 
     return (

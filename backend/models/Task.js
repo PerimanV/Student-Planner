@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const taskSchema = new mongoose.Schema({
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+        type: String,
+        required: true,
+        index: true
     },
 
     courseId: {

@@ -9,6 +9,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import Profile from "./models/Profile.js";
 import { fromNodeHeaders } from "better-auth/node";
+import Goal from "./models/Goal.js" 
 import "dotenv/config";
 
 const app = express();
@@ -59,11 +60,147 @@ mongoose.connect(process.env.MONGO_URI)
 
 const PORT = 5000;
 
+//~~~ GOAL ROUTES ~~~
+
+app.get("api/goals", requireAuth, async (req, res) => {
+    try {
+        const goals = await Goal.find({
+            userId: req.user.id
+        });
+
+        res.json(goals);
+    } catch (error) {
+        console.error("error fetching goals:", error);
+        res.status(500).json({
+            message: "Failed to fetch goals"
+        });
+    }
+});
+
+app.post("api/goals", requireAuth, async (req, res) => {
+    try {
+        const { title, description, targetDate, milestones } = req.body;
+        
+        if(!title?.trim()) {
+            return res.status(400).json({
+                message: "Goal title is required"
+            });
+    }
+
+    if (!Array.isArray(milestones) || milestones.length === 0) {
+        return res.status(400).json({
+            message: "A goal must have at least one milestone"
+        });
+    }
+
+    const trimmedMilestones = milestones.map(milestone => ({
+            title: milestone.title?.trim(),
+            completed: false
+        }));
+
+    const goal = await Goal.create({
+        userId: req.uer.id,
+        title: title.trim(),
+        decription: description?.trim() || "",
+        targetDate: targetDate || null,
+        miletones: trimmedMilestones,
+        completed: false
+    });
+
+    res.status(201),json(goal);
+    } catch (error) {
+        console.error("Error creating goal:", error);
+        res.status(500).json({
+            message: "Failed to create goal"
+        });
+    }
+
+});
+
+app.put("/api/goals/:id", requireAuth, async (req, res) => {
+    try {
+        const { title, description, targetDate, milestones } = req.body;
+
+        if (milestones !== undefined) {
+            if (!Array.isArray(milestones) || milestones.length === 0) {
+                return res.status(400).json({
+                    message: "A goal must have at least one milestone"
+                });
+            }
+        }
+
+        const updates = {
+            title: title.trim(),
+            description: description.trim,
+            targetDate: targetDate || null
+        };
+
+        if (milestones !== undefined) {
+            updates.milestones = milestones.map(milestone => ({
+                title: milestone.title.trim(),
+                completed: milestone.completed
+            }));
+
+            // A goal is completed only when all milestones are completed
+            updates.completed = milestones.every(milestone => milestone.completed);
+        }
+
+        const updatedGoal = await Goal.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user.id
+            },
+            updates,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updatedGoal) {
+            return res.status(404).json({ message: "Goal not found" });
+        }
+
+        res.json(updatedGoal);
+    } catch (error) {
+        console.error("Error updating goal:", error);
+        res.status(500).json({ message: "Failed to update goal" });
+    }
+});
+
+app.delete("/api/goals/:id", requireAuth, async (req, res) => {
+    try {
+        const goal = await Goal.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        });
+
+        if (!goal) {
+            return res.status(404).json({
+                message: "Goal not found"
+            });
+        }
+
+        res.json({
+            message: "Goal deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting goal:", error);
+        res.status(500).json({
+            message: "Failed to delete goal"
+        });
+    }
+});
+
 // ~~~ AI ROUTES ~~~
 
-app.post("/api/notes/:id/summarize", async (req, res) => {
+app.post("/api/notes/:id/summarize", requireAuth, async (req, res) => {
     try {
-        const note = await Note.findById(req.params.id);
+
+        const note = await Note.findOne({
+            _id: req.params.id,
+            userId: req.user.id
+        });
 
         if(!note) {
             return res.status(404).json({
@@ -183,27 +320,33 @@ app.put("/api/profile", requireAuth, async (req, res) => {
 
 // ~~~ COURSES ROUTES ~~~
 
-app.post("/api/courses", async (req, res) => {
+app.post("/api/courses", requireAuth, async (req, res) => {
     try {
-        const newCourse = await Course.create(req.body);
+        const newCourse = await Course.create({
+            courseName: req.body.courseName,
+            courseColor: req.body.courseColor,
+            userId: req.user.id
+        });
 
-        res.json(newCourse);
+        res.status(201).json(newCourse);
     } catch (error) {
-
         console.error("Error creating course:", error);
+
         res.status(500).json({
             message: "Failed to create course"
         });
     }
 });
 
-app.get("/api/courses", async (req, res) => {
+app.get("/api/courses", requireAuth, async (req, res) => {
     try {
-        const courses = await Course.find();
+        const courses = await Course.find({
+            userId: req.user.id
+        });
 
         res.json(courses);
     } catch (error) {
-        console.error(error);
+        console.error("Error fething courses:", error);
 
         res.status(500).json({
             message: "Failed to fetch courses"
@@ -211,10 +354,14 @@ app.get("/api/courses", async (req, res) => {
     }
 });
 
-app.put("/api/courses/:id", async (req, res) => {
+
+app.put("/api/courses/:id", requireAuth, async (req, res) => {
     try {
-        const updatedCourse = await Course.findByIdAndUpdate(
-            req.params.id,
+        const updatedCourse = await Course.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user.id
+            },
             {
                 courseName: req.body.courseName,
                 courseColor: req.body.courseColor
@@ -225,36 +372,39 @@ app.put("/api/courses/:id", async (req, res) => {
             }
         );
 
-        if(!updatedCourse) {
+        if (!updatedCourse) {
             return res.status(404).json({
                 message: "Course not found"
             });
         }
 
         res.json(updatedCourse);
-
     } catch (error) {
         console.error("Error updating course:", error);
+
         res.status(500).json({
             message: "Failed to update course"
         });
     }
 });
 
-app.delete("/api/courses/:id", async (req, res) => {
+app.delete("/api/courses/:id", requireAuth, async (req, res) => {
     try {
-        const deletedCourse = await Course.findByIdAndDelete(req.params.id);
+        const deletedCourse = await Course.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        });
 
-        if(!deletedCourse) {
+        if (!deletedCourse) {
             return res.status(404).json({
                 message: "Course not found"
             });
         }
 
         res.json({
-            message: "Course deleted succesfully",
+            message: "Course deleted successfully",
             course: deletedCourse
-        })
+        });
     } catch (error) {
         console.error("Error deleting course:", error);
 
@@ -264,45 +414,89 @@ app.delete("/api/courses/:id", async (req, res) => {
     }
 });
 
-
 // ~~~ TASKS ROUTES ~~~
 
-app.post("/api/tasks", async (req, res) => {
-    try {
-        const newTask = await Task.create(req.body);
+app.post("/api/tasks", requireAuth, async (req, res) => {
+        try {
+            const { courseId, title, priority, dueDate, completed } = req.body;
 
-        res.json(newTask);
-    } catch (error) {
-        console.error("Error creating task:", error);
+            const course = await Course.findOne({
+                _id: courseId,
+                userId: req.user.id
+            });
 
-        res.status(400).json({
-            message: "Failed to create task"
-        });
-    }
+            if (!course) {
+                return res.status(404).json({
+                    message: "Course not found"
+                });
+            }
+
+            const newTask = await Task.create({
+                userId: req.user.id,
+                courseId,
+                title,
+                priority,
+                dueDate,
+                completed
+            });
+
+            res.status(201).json(newTask);
+        } catch (error) {
+            console.error("Error creating task:", error);
+
+            res.status(500).json({
+                message: "Failed to create task"
+            });
+        }
+    });
+
+app.get("/api/tasks", requireAuth, async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      userId: req.user.id
+    });
+
+    res.json(tasks);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    
+    res.status(500).json({
+      message: "Failed to fetch tasks"
+    });
+  }
 });
 
-app.get("/api/tasks", async (req, res) => {
+app.put("/api/tasks/:id", requireAuth, async (req, res) => {
     try {
-        const tasks = await Task.find();
+        
+        if (req.body.courseId) {
+            const course = await Course.findOne({
+                _id: req.body.courseId,
+                userId: req.user.id
+            });
 
-        res.json(tasks);
-    } catch (error) {
-        console.error("Error fetching tasks:", error);
+            if (!course) {
+                return res.status(404).json({
+                    message: "Course not found"
+                });
+            }
+        }
 
-        res.status(500).json({
-            message: "Failed to fetch tasks"
-        });
-    }
-});
-
-app.put("/api/tasks/:id", async (req, res) => {
-    try {
-        const updatedTask = await Task.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { 
+        const updatedTask = await Task.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user.id
+            },
+            {
+                title: req.body.title,
+                priority: req.body.priority,
+                dueDate: req.body.dueDate,
+                completed: req.body.completed,
+                courseId: req.body.courseId
+            },
+            {
                 new: true,
-                runValidators: true 
+                runValidators: true
             }
         );
 
@@ -314,16 +508,20 @@ app.put("/api/tasks/:id", async (req, res) => {
 
         res.json(updatedTask);
     } catch (error) {
-        console.error("PUT error:", error);
+        console.error("Error updating task:", error);
+
         res.status(500).json({
             message: "Failed to update task"
         });
     }
 });
 
-app.delete("/api/tasks/:id", async (req, res) => {
+app.delete("/api/tasks/:id", requireAuth, async (req, res) => {
     try {
-        const deletedTask = await Task.findByIdAndDelete(req.params.id);
+        const deletedTask = await Task.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        })
 
         if(!deletedTask) {
             return res.status(404).json({
@@ -346,9 +544,11 @@ app.delete("/api/tasks/:id", async (req, res) => {
 
 // ~~~ NOTES ROUTES ~~~
 
-app.get("/api/notes", async (req, res) => {
+app.get("/api/notes", requireAuth, async (req, res) => {
     try {
-        const notes = await Note.find();
+        const notes = await Note.find({
+            userId: req.user.id
+        });
 
         res.json(notes);
     } catch (error) {
@@ -360,63 +560,89 @@ app.get("/api/notes", async (req, res) => {
     }
 });
 
-app.post("/api/notes", async (req, res) => {
+app.post("/api/notes", requireAuth, async (req, res) => {
     try {
-        const newNote = await Note.create(req.body);
 
-        res.json(newNote)
+        const course = await Course.findOne({
+            _id: req.body.courseId,
+            userId: req.user.id
+        });
+
+        if (!course) {
+            return res.status(404).json({
+                message: "Course not found"
+            });
+        }
+
+        const newNote = await Note.create({
+            userId: req.user.id,
+            courseId: req.body.courseId,
+            title: req.body.title,
+            content: req.nody.content
+        });
+
+        res.status(201).json(newNote);
     } catch (error) {
-        console.error("Error creating note:", notes);
+        console.error("Error creating note:", error);
 
-        res.status(400).json({
+        res.status(500).json({
             message: "Failed to create note"
         });
     }
 });
 
-app.put("/api/notes/:id", async (req, res) => {
+
+app.put("/api/notes/:id", requireAuth, async (req, res) => {
     try {
-        const updatedNote = await Note.findByIdAndUpdate(
-            req.params.id,
+        const updatedNote = await Note.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user.id
+            },
             {
                 title: req.body.title,
-                content: req.body.content
+                content: req.body.content,
+                courseId: req.body.courseId
             },
-            { 
+            {
                 new: true,
-                runValidators: true 
+                runValidators: true
             }
         );
 
-        if(!updatedNote) {
+        if (!updatedNote) {
             return res.status(404).json({
-                message: "Task not found"
+                message: "Note not found"
             });
         }
 
         res.json(updatedNote);
     } catch (error) {
-        console.error("PUT error:", error);
+        console.error("Error updating note:", error);
+
         res.status(500).json({
             message: "Failed to update note"
         });
     }
 });
 
-app.delete("/api/notes/:id", async (req, res) => {
+app.delete("/api/notes/:id", requireAuth, async (req, res) => {
     try {
-        const deletedNote = await Note.findByIdAndDelete(req.params.id);
+        const deletedNote = await Note.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        });
 
-        if(!deletedNote) {
+        if (!deletedNote) {
             return res.status(404).json({
-                message: "Task not found"
+                message: "Note not found"
             });
         }
 
         res.json({
-            message: "Note deleted succesfully",
-            task: deletedNote
-        })
+            message: "Note deleted successfully",
+            note: deletedNote
+        });
     } catch (error) {
         console.error("Error deleting note:", error);
 
@@ -424,7 +650,8 @@ app.delete("/api/notes/:id", async (req, res) => {
             message: "Failed to delete note"
         });
     }
-})
+});
+
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

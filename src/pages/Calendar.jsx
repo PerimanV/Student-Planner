@@ -11,7 +11,9 @@ function Calendar() {
     // load tasks
     const [tasks, setTasks] = useState([]);
     useEffect(() => {
-        fetch("http://localhost:5000/api/tasks?userId=6ac662242783449c4c5ce6ce")
+        fetch("http://localhost:5000/api/tasks", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setTasks(data);
@@ -26,7 +28,9 @@ function Calendar() {
     const [editingTask, setEditingTask] = useState(false);
     const [courses, setCourses] = useState([]);
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses")
+        fetch("http://localhost:5000/api/courses", {
+            credentials: "include"
+        })
         .then(response => response.json())
         .then(data => {
             setCourses(data);
@@ -131,9 +135,9 @@ function Calendar() {
     );
 
     if (!course) {
-        console.log("No matching course found");
-        console.log("Task courseId:", task.courseId);
-        console.log("Available courses:", courses);
+        console.log("Task ID:", task._id);
+        console.log("Missing course ID:", task.courseId);
+        console.log("Available course IDs:", courses.map(c => c._id));
     }
 
     return course;
@@ -158,6 +162,7 @@ function Calendar() {
         try {
             const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
                 method: "PUT",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -203,6 +208,7 @@ function Calendar() {
                 `http://localhost:5000/api/tasks/${selectedTask._id}`,
                 {
                     method: "PUT",
+                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json"
                     },
@@ -384,7 +390,7 @@ function Calendar() {
                                                     courseColors[course?.courseColor] || "bg-gray-700"
                                                 } text-center text-lg rounded-2xl px-2`}
                                             >
-                                                {course.courseName}
+                                                {course?.courseName || "Unknown course"}
                                             </p>
 
                                             <p className="text-gray-400 text-sm mt-2">
