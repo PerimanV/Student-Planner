@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Goals from "./pages/Goals";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { ProfileProvider } from "./context/ProfileContext";
 
 // keep provider loaded in every page to avoid requets
@@ -21,23 +22,30 @@ function Layout() {
     );
 }
 
+
 const router = createBrowserRouter([
     {
         element: <Layout />,
         children: [
-            { path: "/", element: <Dashboard /> },
-            { path: "/tasks", element: <Tasks /> },
-            { path: "/calendar", element: <Calendar /> },
-            { path: "/courses", element: <Courses /> },
-            { path: "/notes", element: <Notes /> },
-            { path: "/profile", element: <Profile /> },
+            {
+                element: <ProtectedRoute />,
+                children: [
+                    { path: "/", element: <Dashboard /> },
+                    { path: "/tasks", element: <Tasks /> },
+                    { path: "/calendar", element: <Calendar /> },
+                    { path: "/courses", element: <Courses /> },
+                    { path: "/notes", element: <Notes /> },
+                    { path: "/profile", element: <Profile /> },
+                    { path: "/goals", element: <Goals /> },
+                ],
+            },
             { path: "/register", element: <Register /> },
             { path: "/login", element: <Login /> },
-            { path: "/goals", element: <Goals /> },
             { path: "*", element: <NotFound /> },
         ],
     },
 ]);
+
 
 function App() {
     return <RouterProvider router={router} />;

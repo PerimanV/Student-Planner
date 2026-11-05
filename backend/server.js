@@ -33,14 +33,18 @@ async function requireAuth(req, res, next) {
             headers: fromNodeHeaders(req.headers)
         });
 
-        if (!session) {
+        if (!session || !session.user) {
             return res.status(401).json({
                 message: "You must be logged in."
             });
         }
 
         req.user = session.user;
+
+        console.log("Authenticated user:", req.user);
+
         next();
+
     } catch (error) {
         console.error("Session verification failed:", error);
 
@@ -62,7 +66,7 @@ const PORT = 5000;
 
 //~~~ GOAL ROUTES ~~~
 
-app.get("api/goals", requireAuth, async (req, res) => {
+app.get("/api/goals", requireAuth, async (req, res) => {
     try {
         const goals = await Goal.find({
             userId: req.user.id
@@ -77,7 +81,7 @@ app.get("api/goals", requireAuth, async (req, res) => {
     }
 });
 
-app.post("api/goals", requireAuth, async (req, res) => {
+app.post("/api/goals", requireAuth, async (req, res) => {
     try {
         const { title, description, targetDate, milestones } = req.body;
         
@@ -99,15 +103,15 @@ app.post("api/goals", requireAuth, async (req, res) => {
         }));
 
     const goal = await Goal.create({
-        userId: req.uer.id,
+        userId: req.user.id,
         title: title.trim(),
-        decription: description?.trim() || "",
+        description: description?.trim() || "",
         targetDate: targetDate || null,
-        miletones: trimmedMilestones,
+        milestones: trimmedMilestones,
         completed: false
     });
 
-    res.status(201),json(goal);
+    res.status(201).json(goal);
     } catch (error) {
         console.error("Error creating goal:", error);
         res.status(500).json({
@@ -117,9 +121,24 @@ app.post("api/goals", requireAuth, async (req, res) => {
 
 });
 
+
 app.put("/api/goals/:id", requireAuth, async (req, res) => {
     try {
         const { title, description, targetDate, milestones } = req.body;
+
+        const updates = {};
+
+        if (title !== undefined) {
+            updates.title = title.trim();
+        }
+
+        if (description !== undefined) {
+            updates.description = description.trim();
+        }
+
+        if (targetDate !== undefined) {
+            updates.targetDate = targetDate || null;
+        }
 
         if (milestones !== undefined) {
             if (!Array.isArray(milestones) || milestones.length === 0) {
@@ -127,22 +146,17 @@ app.put("/api/goals/:id", requireAuth, async (req, res) => {
                     message: "A goal must have at least one milestone"
                 });
             }
-        }
 
-        const updates = {
-            title: title.trim(),
-            description: description.trim,
-            targetDate: targetDate || null
-        };
-
-        if (milestones !== undefined) {
             updates.milestones = milestones.map(milestone => ({
+                _id: milestone._id,
                 title: milestone.title.trim(),
                 completed: milestone.completed
             }));
 
-            // A goal is completed only when all milestones are completed
-            updates.completed = milestones.every(milestone => milestone.completed);
+            // Check whether all milestones are completed
+            updates.completed = milestones.every(
+                milestone => milestone.completed
+            );
         }
 
         const updatedGoal = await Goal.findOneAndUpdate(
@@ -158,15 +172,22 @@ app.put("/api/goals/:id", requireAuth, async (req, res) => {
         );
 
         if (!updatedGoal) {
-            return res.status(404).json({ message: "Goal not found" });
+            return res.status(404).json({
+                message: "Goal not found"
+            });
         }
 
         res.json(updatedGoal);
+
     } catch (error) {
         console.error("Error updating goal:", error);
-        res.status(500).json({ message: "Failed to update goal" });
+
+        res.status(500).json({
+            message: "Failed to update goal"
+        });
     }
 });
+
 
 app.delete("/api/goals/:id", requireAuth, async (req, res) => {
     try {
@@ -278,6 +299,10 @@ app.get("/api/profile", requireAuth, async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching profile:", error);
+
+        if (res.headersSent) {
+            return;
+        }
 
         res.status(500).json({
             message: "Failed to fetch profile."

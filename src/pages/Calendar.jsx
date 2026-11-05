@@ -11,7 +11,7 @@ function Calendar() {
     // load tasks
     const [tasks, setTasks] = useState([]);
     useEffect(() => {
-        fetch("http://localhost:5000/api/tasks", {
+        fetch("/api/tasks", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -28,7 +28,7 @@ function Calendar() {
     const [editingTask, setEditingTask] = useState(false);
     const [courses, setCourses] = useState([]);
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses", {
+        fetch("/api/courses", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -160,7 +160,7 @@ function Calendar() {
         )
 
         try {
-            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+            const response = await fetch(`/api/tasks/${id}`, {
                 method: "PUT",
                 credentials: "include",
                 headers: {
@@ -205,7 +205,7 @@ function Calendar() {
     async function saveTask() {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/tasks/${selectedTask._id}`,
+                `/api/tasks/${selectedTask._id}`,
                 {
                     method: "PUT",
                     credentials: "include",

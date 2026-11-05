@@ -42,9 +42,8 @@ function Profile() {
                 }
             }
 
-            // Save the additional profile fields.
             const response = await fetch(
-                "http://localhost:5000/api/profile",
+                "/api/profile",
                 {
                     method: "PUT",
                     credentials: "include",

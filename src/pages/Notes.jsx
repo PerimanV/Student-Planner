@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 function Notes() { 
     const [courses, setCourses] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses", {
+        fetch("/api/courses", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -20,7 +20,7 @@ function Notes() {
 
     const [notes, setNotes] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/notes", {
+        fetch("/api/notes", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -77,7 +77,7 @@ function Notes() {
         setError("");
         
         try {
-            const response = await fetch("http://localhost:5000/api/notes", {
+            const response = await fetch("/api/notes", {
             method: "POST",
             credentials: "include",
             headers: {
@@ -125,7 +125,7 @@ function Notes() {
     async function saveEditedNote() {
         
         try{
-            const response = await fetch(`http://localhost:5000/api/notes/${editingNote._id}`, {
+            const response = await fetch(`/api/notes/${editingNote._id}`, {
                     method: "PUT",
                     credentials: "include",
                     headers: {
@@ -157,7 +157,7 @@ function Notes() {
 
     async function deleteNote(noteId) {
         try {
-            const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, { 
+            const response = await fetch(`/api/notes/${noteId}`, { 
                 method: "DELETE",
                 credentials: "include"
             })
@@ -183,7 +183,7 @@ function Notes() {
         setShowSummaryModal(true);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/notes/${note._id}/summarize`, {
+            const response = await fetch(`/api/notes/${note._id}/summarize`, {
                     method: "POST",
                     credentials: "include"
                 }

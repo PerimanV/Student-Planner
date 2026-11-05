@@ -16,10 +16,11 @@ function Tasks() {
     const [priority, setPriority] = useState("Medium")
     const [dueDate, setDueDate] = useState("")
     const [error, setError] = useState("")
+    const [showCompleted, setShowCompleted] = useState(false);
     //initialize courses if any exist
     const [courses, setCourses] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/courses", {
+        fetch("/api/courses", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -42,7 +43,7 @@ function Tasks() {
     //initialize tasks if any exist
     const [tasks, setTasks] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/tasks", {
+        fetch("/api/tasks", {
             credentials: "include"
         })
         .then(response => response.json())
@@ -73,7 +74,7 @@ function Tasks() {
         }
 
         try {
-            const response = await fetch("http://localhost:5000/api/tasks", {
+            const response = await fetch("/api/tasks", {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -119,7 +120,7 @@ function Tasks() {
 
     async function deleteTask(id) {
         try {
-            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+            const response = await fetch(`/api/tasks/${id}`, {
                 method: 'DELETE',
                 credentials: "include"
             });
@@ -142,7 +143,7 @@ function Tasks() {
         const task = tasks.find(task => task._id === id)
 
         try {
-            const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+            const response = await fetch(`/api/tasks/${id}`, {
                 method: 'PUT',
                 credentials: "include",
                 headers: {
@@ -205,68 +206,123 @@ function Tasks() {
                                 <h2 className={`p-3 text-2xl text-center ${courseColors[course.courseColor]} rounded-t-xl`}>
                                     {course.courseName}
                                 </h2>
-                                {/* display each task in the corresponding course column */}
-                                {tasks.filter((task) => task.courseId == course._id).length === 0 && (
-                                    <p className='mt-10 text-xl text-center opacity-50'>No tasks yet</p>
-                                )}
-                                {tasks
-                                    .filter((task) => task.courseId == course._id)
-                                    .map((task) => (
-                                        <div
-                                            key={task.id}
-                                            className='m-4 p-3 card-hover overflow-hidden'
-                                            onContextMenu={(e) => {
-                                                e.preventDefault()
-                                                deleteTask(task._id)
-                                            }}
-                                        >
+                                {/* Separate completed and uncompleted tasks */}
+                                {(() => {
+                                    const courseTasks = tasks.filter(
+                                        task => task.courseId == course._id
+                                    );
 
-                                        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+                                    const uncompletedTasks = courseTasks.filter(
+                                        task => !task.completed
+                                    );
 
-                                            <div className='flex items-start gap-3 min-w-0'>
+                                    const completedTasks = courseTasks.filter(
+                                        task => task.completed
+                                    );
 
-                                                {task.completed ? (
-                                                    <button
-                                                        className='cursor-pointer shrink-0'
-                                                        onClick={() => toggleTask(task._id)}
-                                                    >
-                                                        <SquareCheckBig className='w-7 h-7 sm:w-8 sm:h-8'/>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        className='cursor-pointer shrink-0'
-                                                        onClick={() => toggleTask(task._id)}
-                                                    >
-                                                        <Square className='w-7 h-7 sm:w-8 sm:h-8'/>
-                                                    </button>
-                                                )}
+                                    return (
+                                        <>
+                                            {courseTasks.length === 0 && (
+                                                <p className='mt-10 text-xl text-center opacity-50'>
+                                                    No tasks yet
+                                                </p>
+                                            )}
 
-                                                <div className='min-w-0'>
-                                                    <h3
-                                                        className={`text-lg sm:text-xl break-words ${
-                                                            task.completed
-                                                                ? "line-through opacity-60"
-                                                                : ""
-                                                        }`}
-                                                    >
-                                                        {task.title}
-                                                    </h3>
+                                            {/* Uncompleted tasks */}
+                                            {uncompletedTasks.map(task => (
+                                                <div
+                                                    key={task._id}
+                                                    className='m-4 p-3 card-hover overflow-hidden'
+                                                    onContextMenu={(e) => {
+                                                        e.preventDefault();
+                                                        deleteTask(task._id);
+                                                    }}
+                                                >
+                                                    <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+                                                        <div className='flex items-start gap-3 min-w-0'>
+                                                            <button
+                                                                className='cursor-pointer shrink-0'
+                                                                onClick={() => toggleTask(task._id)}
+                                                            >
+                                                                <Square className='w-7 h-7 sm:w-8 sm:h-8' />
+                                                            </button>
 
-                                                    <p className='text-sm text-gray-400'>
-                                                        {task.dueDate?.slice(0, 10).split("-").reverse().join("/")}
-                                                    </p>
+                                                            <div className='min-w-0'>
+                                                                <h3 className='text-lg sm:text-xl break-words'>
+                                                                    {task.title}
+                                                                </h3>
+
+                                                                <p className='text-sm text-gray-400'>
+                                                                    {task.dueDate?.slice(0, 10).split("-").reverse().join("/")}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <span className={`self-start sm:self-auto rounded-xl ${setPrtiorityColor(task.priority)} px-3 py-1 text-sm text-white shrink-0`}>
+                                                            {task.priority}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ))}
 
-                                            <span
-                                                className={`self-start sm:self-auto rounded-xl ${setPrtiorityColor(task.priority)} px-3 py-1 text-sm text-white shrink-0`}
-                                            >
-                                                {task.priority}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    ))
-                                }
+                                            {/* Completed tasks separator */}
+                                            {completedTasks.length > 0 && (
+                                                <button
+                                                    onClick={() => setShowCompleted(!showCompleted)}
+                                                    className='mx-4 my-3 flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer'
+                                                >
+                                                    <span className='flex-1 border-t border-gray-700'></span>
+
+                                                    {showCompleted ? "Hide" : "Show"} completed ({completedTasks.length})
+
+                                                    <span className='flex-1 border-t border-gray-700'></span>
+
+                                                    <span>
+                                                        {showCompleted ? "▲" : "▼"}
+                                                    </span>
+                                                </button>
+                                            )}
+
+                                            {/* Completed tasks */}
+                                            {showCompleted && completedTasks.map(task => (
+                                                <div
+                                                    key={task._id}
+                                                    className='m-4 p-3 card-hover overflow-hidden'
+                                                    onContextMenu={(e) => {
+                                                        e.preventDefault();
+                                                        deleteTask(task._id);
+                                                    }}
+                                                >
+                                                    <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+                                                        <div className='flex items-start gap-3 min-w-0'>
+                                                            <button
+                                                                className='cursor-pointer shrink-0'
+                                                                onClick={() => toggleTask(task._id)}
+                                                            >
+                                                                <SquareCheckBig className='w-7 h-7 sm:w-8 sm:h-8' />
+                                                            </button>
+
+                                                            <div className='min-w-0'>
+                                                                <h3 className='text-lg sm:text-xl break-words line-through opacity-60'>
+                                                                    {task.title}
+                                                                </h3>
+
+                                                                <p className='text-sm text-gray-400'>
+                                                                    {task.dueDate?.slice(0, 10).split("-").reverse().join("/")}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <span className={`self-start sm:self-auto rounded-xl ${setPrtiorityColor(task.priority)} px-3 py-1 text-sm text-white shrink-0`}>
+                                                            {task.priority}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
+
                             </div>
                         ))}
                     </div>

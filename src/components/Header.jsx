@@ -13,7 +13,7 @@ function Header() {
         async function loadProfile() {
             try {
                 const response = await fetch(
-                    "http://localhost:5000/api/profile",
+                    "/api/profile",
                     {
                         credentials: "include"
                     }

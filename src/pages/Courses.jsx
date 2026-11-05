@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 function Courses() {
     const [tasks, setTasks] = useState([])
     useEffect(() => {
-        fetch("http://localhost:5000/api/tasks", {
+        fetch("/api/tasks", {
                     credentials: "include"
                 }
             )
@@ -22,35 +22,21 @@ function Courses() {
     const [showModal, setShowModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const [courses, setCourses] = useState([]);
+    useEffect(() => {
+        fetch("/api/courses", {
+            credentials: "include"
+        })
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching courses:", error);
+        });
+    }, []);
     const [courseName, setCourseName] = useState("");
     const [courseColor, setCourseColor] = useState("");
     const [error, setError] = useState("");
-    
-    useEffect(() => {
-        async function fetchCourses() {
-            try {
-                const response = await fetch(
-                    "http://localhost:5000/api/courses",
-                    {
-                        credentials: "include"
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch courses: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                setCourses(data);
-            } catch (error) {
-                console.error("Error fetching courses:", error);
-            }
-        }
-
-        fetchCourses();
-    }, []);
-
 
     function closeModal() {
         setShowModal(false);
@@ -83,7 +69,7 @@ function Courses() {
         setError("")
 
         try {
-            const response  = await fetch("http://localhost:5000/api/courses", {
+            const response  = await fetch("/api/courses", {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -124,7 +110,7 @@ function Courses() {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/courses/${editingCourse._id}`, {
+                `/api/courses/${editingCourse._id}`, {
                     method: "PUT",
                     credentials: "include",
                     headers: {
@@ -163,7 +149,7 @@ function Courses() {
     async function deleteCourse(courseToDelete) {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/courses/${courseToDelete._id}`,
+                `/api/courses/${courseToDelete._id}`,
                 {
                     method: "DELETE",
                     credentials: "include"

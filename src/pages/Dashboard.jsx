@@ -4,33 +4,56 @@ import { useEffect } from "react";
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import DeadlineCard from '../components/DeadlineCard';
-import ScheduleCard from '../components/ScheduleCard';
 
 function Dashboard() {
 
-    // Load courses
-    const [courses] = useState(() => {
-        const savedCourses = localStorage.getItem('courses');
+    const [courses, setCourses] = useState([]);
+        useEffect(() => {
+        fetch("/api/courses", {
+            credentials: "include"
+        })
+            .then(response => response.json())
+            .then(data => {
+                setCourses(data);
+            })
+            .catch(error => {
+                console.error("Error fetching courses:", error);
+            });
+    }, []);
 
-        if (savedCourses) {
-            return JSON.parse(savedCourses);
-        } else {
-            return [];
-        }
-    });
+    const [goals, setGoals] = useState([]);
 
-    // Load tasks
-    const [tasks] = useState(() => {
-        const savedTasks = localStorage.getItem('tasks');
+    useEffect(() => {
+        fetch("/api/goals", {
+            credentials: "include"
+        })
+            .then(response => response.json())
+            .then(data => {
+                setGoals(data);
+            })
+            .catch(error => {
+                console.error("Error fetching goals:", error);
+            });
+    }, []);
+    const [tasks, setTasks] = useState([]);
+    useEffect(() => {
+        fetch("/api/tasks", {
+            credentials: "include"
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch tasks");
+                }
 
-        if (savedTasks) {
-            return JSON.parse(savedTasks);
-        } else {
-            return [];
-        }
-    });
-
-    // Load notes
+                return response.json();
+            })
+            .then(data => {
+                setTasks(data);
+            })
+            .catch(error => {
+                console.error("Error fetching tasks:", error);
+            });
+    }, []);
     const [note, setNote] = useState("");
     const [notes, setNotes] = useState(() => {
         const savedNotes = localStorage.getItem('dashboardNotes');
@@ -206,7 +229,7 @@ function Dashboard() {
                             {upcomingDeadlines.length > 0 ? (
                                 upcomingDeadlines.map(task => (
                                     <DeadlineCard
-                                        key={task.id}
+                                        key={task._id}
                                         title={task.title}
                                         duedate={getDeadlineText(task.dueDate)}
                                         priority={task.priority}
@@ -222,15 +245,95 @@ function Dashboard() {
 
                     <div className="hidden lg:block mx-3 w-0.5 bg-gray-500"></div>
 
-                    <section className="ml-2 space-y-4 lg:flex-1">
+                    <section className="ml-2 lg:flex-1">
                         <h2 className="text-4xl font-bold">
-                            Today's Schedule
+                            Goals Overview
                         </h2>
 
-                        <p className="text-gray-500 mt-4">
-                            No schedule available
-                        </p>
+                        <ul className="mt-4 space-y-3">
+                            {goals.length > 0 ? (
+                                goals.slice(0, 4).map(goal => {
+
+                                    const completed = goal.milestones.filter(
+                                        milestone => milestone.completed
+                                    ).length;
+
+                                    const total = goal.milestones.length;
+
+                                    const progress = total > 0
+                                        ? Math.round((completed / total) * 100)
+                                        : 0;
+
+                                    const radius = 17;
+                                    const circumference = 2 * Math.PI * radius;
+
+                                    const offset = circumference -
+                                        (progress / 100) * circumference;
+
+                                    return (
+                                        <li
+                                            key={goal._id}
+                                            className="flex items-center justify-between gap-4 rounded-xl border border-gray-800 bg-gray-900 p-2"
+                                        >
+
+                                            {/* Goal information */}
+                                            <div className="min-w-0 text-left">
+                                                <h3 className="font-semibold text-gray-200 truncate">
+                                                    {goal.title}
+                                                </h3>
+
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {completed} of {total} milestones completed
+                                                </p>
+                                            </div>
+
+                                            {/* Circular progress */}
+                                            <div className="relative w-11 h-11 shrink-0">
+
+                                                <svg
+                                                    viewBox="0 0 44 44"
+                                                    className="-rotate-90 w-full h-full"
+                                                >
+                                                    <circle
+                                                        cx="22"
+                                                        cy="22"
+                                                        r={radius}
+                                                        stroke="#374151"
+                                                        strokeWidth="4"
+                                                        fill="transparent"
+                                                    />
+
+                                                    <circle
+                                                        cx="22"
+                                                        cy="22"
+                                                        r={radius}
+                                                        stroke="#10b981"
+                                                        strokeWidth="4"
+                                                        fill="transparent"
+                                                        strokeLinecap="round"
+                                                        strokeDasharray={circumference}
+                                                        strokeDashoffset={offset}
+                                                        className="transition-all duration-500"
+                                                    />
+                                                </svg>
+
+                                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">
+                                                    {progress}%
+                                                </div>
+
+                                            </div>
+
+                                        </li>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-gray-500 mt-4">
+                                    No goals created yet.
+                                </p>
+                            )}
+                        </ul>
                     </section>
+
                 </section>
 
                 {/* Quick note */}
