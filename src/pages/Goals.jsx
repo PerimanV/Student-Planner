@@ -6,22 +6,36 @@ import { Plus, X } from 'lucide-react';
 export default function Goals() {
     console.log("Goals component rendered");
     const [goals, setGoals] = useState([]);
-   useEffect(() => {
-    console.log("Goals useEffect executed");
+    useEffect(() => {
+        console.log("Goals useEffect executed");
 
-    fetch("/api/goals", {
-        credentials: "include"
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Goals received:", data);
-        setGoals(data);
-    })
-    .catch(error => {
-        console.error("Error fetching goals:", error);
-    });
-}, []);
-
+        fetch("/api/goals", {
+            credentials: "include"
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Goals received:", data);
+            setGoals(data);
+        })
+        .catch(error => {
+            console.error("Error fetching goals:", error);
+        });
+    }, []);
+    
+    const [courses, setCourses] = useState([]);
+    useEffect(() => {
+        fetch("/api/courses", {
+            credentials: "include"
+        })
+        .then(response => response.json())
+        .then(data => {
+            setCourses(data);
+        })
+        .catch(error => {
+            console.error("Error fetching courses:", error);
+        });
+    }, []);
+    const [selectedCourses, setSelectedCourses] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -39,6 +53,7 @@ export default function Goals() {
         setTargetDate("");
         setMilestones([""]);
 
+        setSelectedCourses([]);
         setEditingGoal(null);
         setOriginalMilestones([]);
         setError("");
@@ -80,6 +95,38 @@ export default function Goals() {
         }
     }
 
+    async function toggleGoalCourse(goalId, courseId) {
+        const goal = goals.find(goal => goal._id === goalId);
+
+        const updatedCourses = goal.courses.map(course => ({
+            courseId: course.courseId,
+            completed: course.courseId === courseId
+                ? !course.completed
+                : course.completed
+        }));
+
+        try {
+            const response = await fetch(`/api/goals/${goalId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ courses: updatedCourses })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update course progress");
+            }
+
+            const updatedGoal = await response.json();
+
+            setGoals(goals.map(goal =>
+                goal._id === goalId ? updatedGoal : goal
+            ));
+        } catch (error) {
+            console.error("Error updating course progress:", error);
+        }
+    }
+
     function addMilestoneField() {
         setMilestones([...milestones, ""]);
     }
@@ -105,8 +152,14 @@ export default function Goals() {
         setDescription(goal.description);
         setTargetDate(goal.targetDate ? goal.targetDate.slice(0, 10) : "");
 
-        setMilestones(goal.milestones.map(milestone => milestone.title));
+        setMilestones(goal.milestones.map(
+            milestone => milestone.title
+        ));
         setOriginalMilestones(goal.milestones);
+
+        setSelectedCourses(
+            goal.courses.map(course => course.courseId)
+        );
 
         setError("");
         setShowModal(true);
@@ -130,8 +183,7 @@ export default function Goals() {
         setError("");
 
         try {
-            const response = await fetch(
-                `/api/goals/${editingGoal._id}`,
+            const response = await fetch(`/api/goals/${editingGoal._id}`,
                 {
                     method: "PUT",
                     credentials: "include",
@@ -201,6 +253,9 @@ export default function Goals() {
                 body: JSON.stringify({
                     title: title.trim(),
                     description: description.trim(),
+                    courses: selectedCourses.map(courseId => ({
+                        courseId: courseId
+                    })),
                     targetDate: targetDate || null,
                     milestones: cleanedMilestones.map(milestone => ({
                         title: milestone,
@@ -222,6 +277,16 @@ export default function Goals() {
             console.error("Error creating goal:", error);
             setError("Failed to create goal. Please try again.");
         }
+    }
+
+    function toggleCourse(courseId) {
+        setSelectedCourses(current => {
+            if (current.includes(courseId)) {
+                return current.filter(id => id !== courseId);
+            }
+
+            return [...current, courseId];
+        });
     }
     
     async function deleteGoal(goalId) {
@@ -257,11 +322,21 @@ export default function Goals() {
 
                     <div className="space-y-4">
                         {goals.map(goal => {
-                            const completed = goal.milestones.filter(milestone => milestone.completed).length;
+                           const completedCourses = (goal.courses || []).filter(
+                                course => course.completed
+                            ).length;
 
-                            const total = goal.milestones.length;
+                            const completedMilestones = (goal.milestones || []).filter(
+                                milestone => milestone.completed
+                            ).length;
+
+                            const totalCourses = (goal.courses || []).length;
+                            const totalMilestones = (goal.milestones || []).length;
+
+                            const completed = completedCourses + completedMilestones;
+                            const total = totalCourses + totalMilestones;
+
                             const progress = total > 0 ? (completed / total) * 100 : 0;
-
                             const isCompleted = total > 0 && completed === total;
 
                             return (
@@ -314,7 +389,55 @@ export default function Goals() {
                                         </div>
                                     </div>
 
-                                    <div className="border-t border-zinc-800 mt-5 pt-5">
+                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+
+                                        {goal.courses?.length > 0 ? (
+                                            <div className=" mt-1 pt-1">
+                                                <h3 className="font-semibold mb-3">
+                                                    Courses
+                                                </h3>
+
+                                                <div className="space-y-3">
+                                                    {goal.courses?.map(goalCourse => {
+                                                        const course = courses.find(
+                                                            course => course._id === goalCourse.courseId
+                                                        );
+
+                                                        return (
+                                                            <label
+                                                                key={goalCourse.courseId}
+                                                                className="flex items-center gap-3 cursor-pointer group"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={goalCourse.completed}
+                                                                    onChange={() => toggleGoalCourse(
+                                                                        goal._id,
+                                                                        goalCourse.courseId
+                                                                    )}
+                                                                    className="w-4 h-4 accent-emerald-400 shrink-0 cursor-pointer"
+                                                                />
+
+                                                                <span className={`text-sm sm:text-base transition-colors ${
+                                                                    goalCourse.completed
+                                                                        ? "text-gray-400"
+                                                                        : "text-gray-200 group-hover:text-white"
+                                                                }`}>
+                                                                    {course ? course.courseName : "Course not found"}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">
+                                                No courses associated with this goal.
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-gray-200 dark:border-gray-700 mt-5 pt-5">
                                         <h3 className="font-semibold mb-3">
                                             Milestones
                                         </h3>
@@ -345,7 +468,7 @@ export default function Goals() {
 
                                         {!isCompleted && (
                                             <p className="text-xs text-gray-400 mt-4">
-                                                The goal cannot be completed until all milestones are checked.
+                                                The goal will be completed when all courses and milestones are checked.
                                             </p>
                                         )}
                                     </div>
@@ -406,6 +529,42 @@ export default function Goals() {
                                         onChange={event => setTargetDate(event.target.value)}
                                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-emerald-400"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-gray-300 mb-2">
+                                        Associated courses (optional)
+                                    </label>
+
+                                    <div className="space-y-2 max-h-40 overflow-y-auto border border-zinc-700 rounded-lg p-3">
+                                        {courses.length === 0 ? (
+                                            <p className="text-sm text-gray-500">
+                                                No courses available.
+                                            </p>
+                                        ) : (
+                                            courses.map(course => (
+                                                <label
+                                                    key={course._id}
+                                                    className="flex items-center gap-3 cursor-pointer"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedCourses.includes(course._id)}
+                                                        onChange={() => toggleCourse(course._id)}
+                                                        className="w-4 h-4 accent-emerald-400"
+                                                    />
+
+                                                    <span className="text-sm text-gray-200">
+                                                        {course.courseName}
+                                                    </span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Select one or more courses related to this goal.
+                                    </p>
                                 </div>
 
                                 <div>

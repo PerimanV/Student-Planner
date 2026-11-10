@@ -83,53 +83,94 @@ app.get("/api/goals", requireAuth, async (req, res) => {
 
 app.post("/api/goals", requireAuth, async (req, res) => {
     try {
-        const { title, description, targetDate, milestones } = req.body;
-        
-        if(!title?.trim()) {
+        const { title, description, targetDate, milestones, courses } = req.body;
+
+        if (!title?.trim()) {
             return res.status(400).json({
                 message: "Goal title is required"
             });
-    }
+        }
 
-    if (!Array.isArray(milestones) || milestones.length === 0) {
-        return res.status(400).json({
-            message: "A goal must have at least one milestone"
-        });
-    }
+        // at least one course or milestone needs to exist
+        if ((!Array.isArray(courses) || courses.length === 0) && (!Array.isArray(milestones) || milestones.length === 0)) {
+            return res.status(400).json({
+                message: "Please add at least one course or milestone to your goal."
+            });
+        }
 
-    const trimmedMilestones = milestones.map(milestone => ({
+        const trimmedMilestones = (milestones || []).map(milestone => ({
             title: milestone.title?.trim(),
             completed: false
         }));
 
-    const goal = await Goal.create({
-        userId: req.user.id,
-        title: title.trim(),
-        description: description?.trim() || "",
-        targetDate: targetDate || null,
-        milestones: trimmedMilestones,
-        completed: false
-    });
+        const selectedCourses = courses || [];
 
-    res.status(201).json(goal);
+        // Check that all selected courses belong to the logged-in user
+        const courseIds = selectedCourses.map(course => course.courseId);
+
+        const userCourses = await Course.find({
+            _id: { $in: courseIds },
+            userId: req.user.id
+        });
+
+        if (userCourses.length !== courseIds.length) {
+            return res.status(400).json({
+                message: "One or more selected courses are invalid"
+            });
+        }
+
+        const goalCourses = selectedCourses.map(course => ({
+            courseId: course.courseId,
+            completed: false
+        }));
+
+        const goal = await Goal.create({
+            userId: req.user.id,
+            title: title.trim(),
+            description: description?.trim() || "",
+            targetDate: targetDate || null,
+            courses: goalCourses,
+            milestones: trimmedMilestones,
+            completed: false
+        });
+
+        res.status(201).json(goal);
+
     } catch (error) {
         console.error("Error creating goal:", error);
+
         res.status(500).json({
             message: "Failed to create goal"
         });
     }
-
 });
 
 
 app.put("/api/goals/:id", requireAuth, async (req, res) => {
     try {
-        const { title, description, targetDate, milestones } = req.body;
+        const { title, description, targetDate, milestones, courses } = req.body;
 
         const updates = {};
 
         if (title !== undefined) {
+            if (!title.trim()) {
+                return res.status(400).json({
+                    message: "Goal title is required"
+                });
+            }
+
             updates.title = title.trim();
+        }
+        
+        const existingGoal = await Goal.findOne({
+            _id: req.params.id,
+            userId: req.user.id
+        });
+
+        if (!existingGoal) {
+            return res.status(404).json({
+                message: "Goal not found"
+            });
         }
 
         if (description !== undefined) {
@@ -140,24 +181,69 @@ app.put("/api/goals/:id", requireAuth, async (req, res) => {
             updates.targetDate = targetDate || null;
         }
 
+        // Update milestones
         if (milestones !== undefined) {
-            if (!Array.isArray(milestones) || milestones.length === 0) {
-                return res.status(400).json({
-                    message: "A goal must have at least one milestone"
-                });
-            }
-
             updates.milestones = milestones.map(milestone => ({
                 _id: milestone._id,
                 title: milestone.title.trim(),
-                completed: milestone.completed
+                completed: milestone.completed || false
             }));
-
-            // Check whether all milestones are completed
-            updates.completed = milestones.every(
-                milestone => milestone.completed
-            );
         }
+
+        // Update associated courses
+        if (courses !== undefined) {
+            if (!Array.isArray(courses)) {
+                return res.status(400).json({
+                    message: "Invalid courses"
+                });
+            }
+
+            const courseIds = courses.map(course => course.courseId);
+
+            const userCourses = await Course.find({
+                _id: { $in: courseIds },
+                userId: req.user.id
+            });
+
+            if (userCourses.length !== courseIds.length) {
+                return res.status(400).json({
+                    message: "One or more selected courses are invalid"
+                });
+            }
+
+            updates.courses = courses.map(course => {
+                const existingCourse = existingGoal.courses.find(
+                    item => item.courseId.toString() === course.courseId.toString()
+                );
+
+                return {
+                    courseId: course.courseId,
+                    completed: course.completed !== undefined
+                        ? course.completed
+                        : existingCourse ? existingCourse.completed : false
+                };
+            });
+        }
+
+        // Get the courses and milestones after the requested changes
+        const finalCourses = updates.courses ?? existingGoal.courses;
+        const finalMilestones = updates.milestones ?? existingGoal.milestones;
+
+        // A goal must contain at least one course or milestone
+        if (finalCourses.length === 0 && finalMilestones.length === 0) {
+            return res.status(400).json({
+                message: "A goal must have at least one course or milestone."
+            });
+        }
+
+        // Check whether all courses and milestones are completed
+        const allCoursesCompleted = finalCourses.every(course => course.completed);
+
+        const allMilestonesCompleted = finalMilestones.every(
+            milestone => milestone.completed
+        );
+
+        updates.completed = allCoursesCompleted && allMilestonesCompleted;
 
         const updatedGoal = await Goal.findOneAndUpdate(
             {

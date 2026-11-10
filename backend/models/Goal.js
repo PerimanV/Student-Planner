@@ -12,6 +12,18 @@ const milestoneSchema = new mongoose.Schema({
     }
 });
 
+const goalCourseSchema = new mongoose.Schema({
+    courseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+        required: true
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const goalSchema = new mongoose.Schema({
     userId: {
         type: String,
@@ -31,6 +43,10 @@ const goalSchema = new mongoose.Schema({
     targetDate: {
         type: Date,
         default: null
+    },
+    courses: {
+        type: [goalCourseSchema],
+        default: []
     },
     milestones: {
         type: [milestoneSchema],
