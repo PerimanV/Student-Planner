@@ -100,7 +100,9 @@ function CourseCard({
                                 </p>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Due: {task.dueDate}
+                                    Due: {task.dueDate
+                                        ? new Date(task.dueDate).toLocaleDateString("en-GB")
+                                        : "No due date"}
                                 </p>
                             </div>
 

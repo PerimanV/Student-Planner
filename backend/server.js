@@ -689,7 +689,7 @@ app.post("/api/notes", requireAuth, async (req, res) => {
             userId: req.user.id,
             courseId: req.body.courseId,
             title: req.body.title,
-            content: req.nody.content
+            content: req.body.content
         });
 
         res.status(201).json(newNote);
@@ -701,7 +701,6 @@ app.post("/api/notes", requireAuth, async (req, res) => {
         });
     }
 });
-
 
 app.put("/api/notes/:id", requireAuth, async (req, res) => {
     try {
@@ -762,7 +761,6 @@ app.delete("/api/notes/:id", requireAuth, async (req, res) => {
         });
     }
 });
-
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

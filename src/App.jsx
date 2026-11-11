@@ -10,6 +10,8 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Goals from "./pages/Goals";
+import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ProfileProvider } from "./context/ProfileContext";
 
@@ -41,6 +43,8 @@ const router = createBrowserRouter([
             },
             { path: "/register", element: <Register /> },
             { path: "/login", element: <Login /> },
+            { path: "/forgot-password", element: <ForgotPassword /> },
+            { path: "/reset-password", element: <ResetPassword /> },
             { path: "*", element: <NotFound /> },
         ],
     },

@@ -81,6 +81,15 @@ export default function Login() {
                         />
                     </div>
 
+                    <div className="flex justify-end">
+                        <Link
+                            to="/forgot-password"
+                            className="text-sm text-emerald-400 hover:text-emerald-300"
+                        >
+                            Forgot password?
+                        </Link>
+                    </div>
+
                     {error && (
                         <p role="alert" className="text-sm text-red-400">
                             {error}
